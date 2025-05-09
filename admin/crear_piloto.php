@@ -8,7 +8,7 @@ if (!isset($_SESSION['user_id']) || $_SESSION['rol'] !== 'admin') {
 }
 
 // Obtener flotas activas
-$flotas = $pdo->query("SELECT id, nombre FROM flotas ORDER BY nombre ASC")->fetchAll();
+$flotas = $pdo->query("SELECT id, tipo FROM flotas ORDER BY tipo ASC")->fetchAll();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $nombre    = $_POST['nombre'];
@@ -68,7 +68,7 @@ include 'partials/sidebar.php';
       <select name="flota_id" class="form-select" required>
         <option value="">Selecciona una flota</option>
         <?php foreach ($flotas as $flota): ?>
-          <option value="<?= $flota['id'] ?>"><?= htmlspecialchars($flota['nombre']) ?></option>
+          <option value="<?= $flota['id'] ?>"><?= htmlspecialchars($flota['tipo']) ?></option>
         <?php endforeach; ?>
       </select>
     </div>

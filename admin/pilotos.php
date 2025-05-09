@@ -12,7 +12,7 @@ include 'partials/sidebar.php';
 
 // Obtener pilotos activos
 $query = $pdo->query("
-  SELECT p.id, u.nombre, u.apellido, u.telefono, u.email, f.nombre AS flota
+  SELECT p.id, u.nombre, u.apellido, u.telefono, u.email, f.tipo AS flota
   FROM pilotos p
   JOIN users u ON p.user_id = u.id
   LEFT JOIN flotas f ON p.flota_id = f.id
