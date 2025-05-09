@@ -14,7 +14,6 @@ $query = $pdo->query("
   SELECT m.id, m.nombre AS municipio, d.nombre AS departamento
   FROM municipios m
   JOIN departamentos d ON m.departamento_id = d.id
-  WHERE m.estado = 1
   ORDER BY d.nombre, m.nombre
 ");
 ?>

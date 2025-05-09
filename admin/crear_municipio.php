@@ -8,7 +8,7 @@ if (!isset($_SESSION['user_id']) || $_SESSION['rol'] !== 'admin') {
 }
 
 // Obtener departamentos activos
-$departamentos = $pdo->query("SELECT id, nombre FROM departamentos WHERE estado = 1 ORDER BY nombre ASC")->fetchAll();
+$departamentos = $pdo->query("SELECT id, nombre FROM departamentos ORDER BY nombre ASC")->fetchAll();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $nombre = $_POST['nombre'];

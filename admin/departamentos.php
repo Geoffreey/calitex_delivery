@@ -11,7 +11,7 @@ include 'partials/header.php';
 include 'partials/sidebar.php';
 
 // Obtener todos los departamentos activos
-$query = $pdo->query("SELECT * FROM departamentos WHERE estado = 1 ORDER BY nombre ASC");
+$query = $pdo->query("SELECT * FROM departamentos ORDER BY nombre ASC");
 ?>
 
 <div class="col-lg-10 col-12 p-4">

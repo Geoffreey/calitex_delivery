@@ -8,7 +8,7 @@ if (!isset($_SESSION['user_id']) || $_SESSION['rol'] !== 'admin') {
 }
 
 // Obtener municipios activos
-$municipios = $pdo->query("SELECT id, nombre FROM municipios WHERE estado = 1 ORDER BY nombre ASC")->fetchAll();
+$municipios = $pdo->query("SELECT id, nombre FROM municipios ORDER BY nombre ASC")->fetchAll();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $municipio_id = $_POST['municipio_id'];
