@@ -8,6 +8,7 @@
     <a href="dashboard.php" class="list-group-item list-group-item-action">Inicio</a>
     <a href="clientes.php" class="list-group-item list-group-item-action">Clientes</a>
     <a href="pilotos.php" class="list-group-item list-group-item-action">Pilotos</a>
+    <a href="auxiliares.php" class="list-group-item list-group-item-action">Auxiliares</a>
     <a href="flotas.php" class="list-group-item list-group-item-action">Flotas</a>
     <a href="rutas.php" class="list-group-item list-group-item-action">Rutas</a>
     <a href="paquetes.php" class="list-group-item list-group-item-action">Paquetes</a>
@@ -24,6 +25,7 @@
     <a href="dashboard.php" class="list-group-item list-group-item-action">Inicio</a>
     <a href="clientes.php" class="list-group-item list-group-item-action">Clientes</a>
     <a href="pilotos.php" class="list-group-item list-group-item-action">Pilotos</a>
+    <a href="auxiliares.php" class="list-group-item list-group-item-action">Auxiliares</a>
     <a href="flotas.php" class="list-group-item list-group-item-action">Flotas</a>
     <a href="rutas.php" class="list-group-item list-group-item-action">Rutas</a>
     <a href="paquetes.php" class="list-group-item list-group-item-action">Paquetes</a>

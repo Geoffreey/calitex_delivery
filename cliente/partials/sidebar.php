@@ -9,6 +9,7 @@
     <a href="cotizador.php" class="list-group-item list-group-item-action">Cotizar envío</a>
     <a href="solicitar_recoleccion.php" class="list-group-item list-group-item-action">Mis recolecciones</a>
     <a href="mis_envios.php" class="list-group-item list-group-item-action">Mis envíos</a>
+    <a href="mis_direcciones.php" class="list-group-item list-group-item-action">Mis direcciones</a>
     <a href="perfil.php" class="list-group-item list-group-item-action">Mi perfil</a>
   </div>
 </div>
@@ -20,6 +21,7 @@
     <a href="cotizador.php" class="list-group-item list-group-item-action">Cotizar envío</a>
     <a href="solicitar_recoleccion.php" class="list-group-item list-group-item-action">Mis recolecciones</a>
     <a href="mis_envios.php" class="list-group-item list-group-item-action">Mis envíos</a>
+    <a href="mis_direcciones.php" class="list-group-item list-group-item-action">Mis direcciones</a>
     <a href="perfil.php" class="list-group-item list-group-item-action">Mi perfil</a>
   </div>
 </div>

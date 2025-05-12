@@ -15,22 +15,38 @@ $stmt->execute([$user_id]);
 $cliente = $stmt->fetch();
 $cliente_id = $cliente['id'] ?? 0;
 
-// Obtener zonas
-$zonas = $pdo->query("
-  SELECT z.id, z.numero, m.nombre AS municipio
-  FROM zona z
-  JOIN municipios m ON z.municipio_id = m.id
-  ORDER BY m.nombre, z.numero
-")->fetchAll();
+// Obtener direcciones del cliente
+$direcciones = $pdo->prepare("
+  SELECT d.id, d.tipo, d.calle, d.numero, z.numero AS zona, m.nombre AS municipio, dep.nombre AS departamento
+  FROM direcciones d
+  JOIN zona z ON d.zona_id = z.id
+  JOIN municipios m ON d.municipio_id = m.id
+  JOIN departamentos dep ON d.departamento_id = dep.id
+  WHERE d.cliente_id = ?
+  ORDER BY d.tipo, d.id DESC
+");
+$direcciones->execute([$cliente_id]);
+$dir_all = $direcciones->fetchAll();
+
+$recolecciones = array_filter($dir_all, fn($d) => $d['tipo'] === 'recoleccion');
+$entregas = array_filter($dir_all, fn($d) => $d['tipo'] === 'entrega');
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $tamano = $_POST['tamano'];
   $peso = $_POST['peso'];
   $descripcion = $_POST['descripcion'];
-  $zona_origen_id = $_POST['zona_origen_id'];
-  $zona_destino_id = $_POST['zona_destino_id'];
+  $direccion_origen_id = $_POST['direccion_origen_id'];
+  $direccion_destino_id = $_POST['direccion_destino_id'];
 
-  // Buscar tarifa automáticamente
+  // Obtener zona_id de ambas direcciones
+  $zona_stmt = $pdo->prepare("SELECT zona_id FROM direcciones WHERE id = ?");
+  $zona_stmt->execute([$direccion_origen_id]);
+  $zona_origen_id = $zona_stmt->fetchColumn();
+
+  $zona_stmt->execute([$direccion_destino_id]);
+  $zona_destino_id = $zona_stmt->fetchColumn();
+
+  // Buscar tarifa compatible
   $stmt = $pdo->prepare("
     SELECT id FROM tarifas 
     WHERE zona_origen_id = ? AND zona_destino_id = ? 
@@ -44,10 +60,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   try {
     $stmt = $pdo->prepare("
       INSERT INTO paquetes 
-      (cliente_id, tamano, peso, descripcion, zona_origen_id, zona_destino_id, tarifa_id) 
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      (cliente_id, tamano, peso, descripcion, zona_origen_id, zona_destino_id, direccion_origen_id, direccion_destino_id, tarifa_id) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     ");
-    $stmt->execute([$cliente_id, $tamano, $peso, $descripcion, $zona_origen_id, $zona_destino_id, $tarifa_id]);
+    $stmt->execute([
+      $cliente_id, $tamano, $peso, $descripcion,
+      $zona_origen_id, $zona_destino_id,
+      $direccion_origen_id, $direccion_destino_id,
+      $tarifa_id
+    ]);
     header("Location: mis_envios.php");
     exit;
   } catch (Exception $e) {
@@ -63,20 +84,24 @@ include 'partials/sidebar.php';
   <h2>Solicitar Recolección</h2>
   <form method="POST" class="row g-3">
     <div class="col-md-6">
-      <label class="form-label">Zona de Recolección</label>
-      <select name="zona_origen_id" class="form-select" required>
-        <option value="">Seleccione zona</option>
-        <?php foreach ($zonas as $z): ?>
-          <option value="<?= $z['id'] ?>"><?= $z['municipio'] ?> - Zona <?= $z['numero'] ?></option>
+      <label class="form-label">Dirección de Recolección</label>
+      <select name="direccion_origen_id" class="form-select" required>
+        <option value="">Seleccione dirección</option>
+        <?php foreach ($recolecciones as $dir): ?>
+          <option value="<?= $dir['id'] ?>">
+            <?= $dir['calle'] ?> #<?= $dir['numero'] ?>, Zona <?= $dir['zona'] ?>, <?= $dir['municipio'] ?>, <?= $dir['departamento'] ?>
+          </option>
         <?php endforeach; ?>
       </select>
     </div>
     <div class="col-md-6">
-      <label class="form-label">Zona de Destino</label>
-      <select name="zona_destino_id" class="form-select" required>
-        <option value="">Seleccione zona</option>
-        <?php foreach ($zonas as $z): ?>
-          <option value="<?= $z['id'] ?>"><?= $z['municipio'] ?> - Zona <?= $z['numero'] ?></option>
+      <label class="form-label">Dirección de Entrega</label>
+      <select name="direccion_destino_id" class="form-select" required>
+        <option value="">Seleccione dirección</option>
+        <?php foreach ($entregas as $dir): ?>
+          <option value="<?= $dir['id'] ?>">
+            <?= $dir['calle'] ?> #<?= $dir['numero'] ?>, Zona <?= $dir['zona'] ?>, <?= $dir['municipio'] ?>, <?= $dir['departamento'] ?>
+          </option>
         <?php endforeach; ?>
       </select>
     </div>
