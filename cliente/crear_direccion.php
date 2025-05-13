@@ -83,18 +83,12 @@ include 'partials/sidebar.php';
       <label class="form-label">Municipio</label>
       <select id="municipio" name="municipio_id" class="form-select" required>
         <option value="">Seleccione</option>
-        <?php foreach ($municipios as $m): ?>
-          <option value="<?= $m['id'] ?>"><?= $m['nombre'] ?></option>
-        <?php endforeach; ?>
       </select>
     </div>
     <div class="col-md-4">
       <label class="form-label">Zona</label>
       <select id="zona" name="zona_id" class="form-select" required>
         <option value="">Seleccione</option>
-        <?php foreach ($zonas as $z): ?>
-          <option value="<?= $z['id'] ?>"><?= $z['municipio'] ?> - Zona <?= $z['numero'] ?></option>
-        <?php endforeach; ?>
       </select>
     </div>
     <div class="col-12">
@@ -108,31 +102,43 @@ include 'partials/sidebar.php';
   </form>
 </div>
 <script>
-    document.getElementById('departamento').addEventListener('change', function () {
+document.getElementById('departamento').addEventListener('change', function () {
   const departamento_id = this.value;
   fetch('../ajax/municipios_por_departamento.php?departamento_id=' + departamento_id)
-    .then(res => res.json())
+    .then(res => {
+      if (!res.ok) throw new Error('Error HTTP: ' + res.status);
+      return res.json();
+    })
     .then(data => {
       const municipioSelect = document.getElementById('municipio');
       municipioSelect.innerHTML = '<option value="">Seleccione</option>';
       data.forEach(m => {
-        municipioSelect.innerHTML += <option value="${m.id}">${m.nombre}</option>;
+        municipioSelect.innerHTML += `<option value="${m.id}">${m.nombre}</option>`;
       });
 
       document.getElementById('zona').innerHTML = '<option value="">Seleccione</option>';
+    })
+    .catch(error => {
+      console.error('Error al cargar municipios:', error);
     });
 });
 
 document.getElementById('municipio').addEventListener('change', function () {
   const municipio_id = this.value;
   fetch('../ajax/zonas_por_municipio.php?municipio_id=' + municipio_id)
-    .then(res => res.json())
+    .then(res => {
+      if (!res.ok) throw new Error('Error HTTP: ' + res.status);
+      return res.json();
+    })
     .then(data => {
       const zonaSelect = document.getElementById('zona');
       zonaSelect.innerHTML = '<option value="">Seleccione</option>';
       data.forEach(z => {
-        zonaSelect.innerHTML += <option value="${z.id}">Zona ${z.numero}</option>;
+        zonaSelect.innerHTML += `<option value="${z.id}">Zona ${z.numero}</option>`;
       });
+    })
+    .catch(error => {
+      console.error('Error al cargar zonas:', error);
     });
 });
 </script>

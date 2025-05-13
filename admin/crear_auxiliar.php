@@ -12,7 +12,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $apellido = $_POST['apellido'];
   $email = $_POST['email'];
   $bodega_asignada = $_POST['bodega_asignada'];
-  $password = password_hash('cliente123', PASSWORD_DEFAULT); // Contraseña predeterminada
+  $password = password_hash('auxiliar123', PASSWORD_DEFAULT); // Contraseña predeterminada
 
   try {
     // Insertar en users
