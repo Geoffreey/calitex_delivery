@@ -7,21 +7,16 @@ if (!isset($_SESSION['user_id']) || $_SESSION['rol'] !== 'auxiliar') {
   exit;
 }
 
-$paquete_id = $_POST['paquete_id'] ?? null;
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['paquete_id'])) {
+  $paquete_id = $_POST['paquete_id'];
 
-if (!$paquete_id) {
-  echo "ID del paquete no proporcionado.";
-  exit;
-}
-
-try {
-  // Confirmar el paquete en bodega
-  $stmt = $pdo->prepare("UPDATE paquetes SET confirmado_bodega = 1 WHERE id = ?");
+  // Confirmar llegada
+  $stmt = $pdo->prepare("UPDATE paquetes SET confirmado_bodega = 1, fecha_recepcion = NOW() WHERE id = ?");
   $stmt->execute([$paquete_id]);
 
-  // Redirigir de nuevo a la lista
-  header("Location: paquetes_por_confirmar.php");
+  // Redirigir a asignar ruta
+  header("Location: asignar_ruta.php?id=" . $paquete_id);
   exit;
-} catch (Exception $e) {
-  echo "Error al confirmar paquete: " . $e->getMessage();
+} else {
+  echo "Solicitud inválida.";
 }

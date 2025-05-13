@@ -6,7 +6,7 @@
   </div>
   <div class="offcanvas-body">
     <a href="dashboard.php" class="list-group-item list-group-item-action">Inicio</a>
-    <a href="rutas.php" class="list-group-item list-group-item-action">Rutas asignadas</a>
+    <a href="ruta_asignada.php" class="list-group-item list-group-item-action">Rutas asignadas</a>
     <a href="recolecciones.php" class="list-group-item list-group-item-action">Recolecciones</a>
     <a href="envios.php" class="list-group-item list-group-item-action">Entregas</a>
     <a href="perfil.php" class="list-group-item list-group-item-action">Mi perfil</a>
@@ -17,7 +17,7 @@
 <div class="col-lg-2 d-none d-lg-block bg-light border-end vh-100">
   <div class="list-group list-group-flush mt-3">
     <a href="dashboard.php" class="list-group-item list-group-item-action">Inicio</a>
-    <a href="rutas.php" class="list-group-item list-group-item-action">Rutas asignadas</a>
+    <a href="ruta_asignada.php" class="list-group-item list-group-item-action">Rutas asignadas</a>
     <a href="recolecciones.php" class="list-group-item list-group-item-action">Recolecciones</a>
     <a href="envios.php" class="list-group-item list-group-item-action">Entregas</a>
     <a href="perfil.php" class="list-group-item list-group-item-action">Mi perfil</a>

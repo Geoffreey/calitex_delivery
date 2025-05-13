@@ -6,8 +6,9 @@
   </div>
   <div class="offcanvas-body">
     <a href="dashboard.php" class="list-group-item list-group-item-action">Inicio</a>
-    <a href="llegadas.php" class="list-group-item list-group-item-action">Confirmar llegadas</a>
-    <a href="entregas.php" class="list-group-item list-group-item-action">Entregar a piloto</a>
+    <a href="paquetes_por_confirmar.php" class="list-group-item list-group-item-action">Confirmar llegadas</a>
+    <a href="asignar_ruta_envios_recolecciones.php" class="list-group-item list-group-item-action">Asignar ruta paquetes</a>
+    <a href="asignar_piloto_a_ruta.php" class="list-group-item list-group-item-action">Asignar ruta pilotos</a>
     <a href="perfil.php" class="list-group-item list-group-item-action">Mi perfil</a>
   </div>
 </div>
@@ -16,8 +17,9 @@
 <div class="col-lg-2 d-none d-lg-block bg-light border-end vh-100">
   <div class="list-group list-group-flush mt-3">
     <a href="dashboard.php" class="list-group-item list-group-item-action">Inicio</a>
-    <a href="llegadas.php" class="list-group-item list-group-item-action">Confirmar llegadas</a>
-    <a href="entregas.php" class="list-group-item list-group-item-action">Entregar a piloto</a>
+    <a href="paquetes_por_confirmar.php" class="list-group-item list-group-item-action">Confirmar llegadas</a>
+    <a href="asignar_ruta_envios_recolecciones.php" class="list-group-item list-group-item-action">Asignar ruta paquetes</a>
+    <a href="asignar_piloto_a_ruta.php" class="list-group-item list-group-item-action">Asignar ruta pilotos</a>
     <a href="perfil.php" class="list-group-item list-group-item-action">Mi perfil</a>
   </div>
 </div>

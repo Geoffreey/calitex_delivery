@@ -7,7 +7,9 @@
   <div class="offcanvas-body">
     <a href="dashboard.php" class="list-group-item list-group-item-action">Inicio</a>
     <a href="cotizador.php" class="list-group-item list-group-item-action">Cotizar envío</a>
-    <a href="solicitar_recoleccion.php" class="list-group-item list-group-item-action">Mis recolecciones</a>
+    <a href="crear_recoleccion.php" class="list-group-item list-group-item-action">Solicitar recoleccion</a>
+    <a href="mis_recolecciones.php" class="list-group-item list-group-item-action">Mis recolecciones</a>
+    <a href="crear_envio.php" class="list-group-item list-group-item-action">Solicitar envio</a>
     <a href="mis_envios.php" class="list-group-item list-group-item-action">Mis envíos</a>
     <a href="mis_direcciones.php" class="list-group-item list-group-item-action">Mis direcciones</a>
     <a href="perfil.php" class="list-group-item list-group-item-action">Mi perfil</a>
@@ -19,7 +21,9 @@
   <div class="list-group list-group-flush mt-3">
     <a href="dashboard.php" class="list-group-item list-group-item-action">Inicio</a>
     <a href="cotizador.php" class="list-group-item list-group-item-action">Cotizar envío</a>
-    <a href="solicitar_recoleccion.php" class="list-group-item list-group-item-action">Mis recolecciones</a>
+    <a href="crear_recoleccion.php" class="list-group-item list-group-item-action">Solicitar recoleccion</a>
+    <a href="mis_recolecciones.php" class="list-group-item list-group-item-action">Mis recolecciones</a>
+    <a href="crear_envio.php" class="list-group-item list-group-item-action">Solicitar envio</a>
     <a href="mis_envios.php" class="list-group-item list-group-item-action">Mis envíos</a>
     <a href="mis_direcciones.php" class="list-group-item list-group-item-action">Mis direcciones</a>
     <a href="perfil.php" class="list-group-item list-group-item-action">Mi perfil</a>

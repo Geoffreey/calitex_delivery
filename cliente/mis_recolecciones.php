@@ -12,33 +12,33 @@ $stmt->execute([$_SESSION['user_id']]);
 $cliente_id = $stmt->fetchColumn();
 
 $stmt = $pdo->prepare("
-  SELECT e.*, 
+  SELECT r.*, 
          do.calle AS calle_origen, do.numero AS num_origen, zo.numero AS zona_origen, mo.nombre AS muni_origen, dp1.nombre AS depto_origen,
          dd.calle AS calle_destino, dd.numero AS num_destino, zd.numero AS zona_destino, md.nombre AS muni_destino, dp2.nombre AS depto_destino
-  FROM envios e
-  JOIN direcciones do ON e.direccion_origen_id = do.id
+  FROM recolecciones r
+  JOIN direcciones do ON r.direccion_origen_id = do.id
   JOIN zona zo ON do.zona_id = zo.id
   JOIN municipios mo ON do.municipio_id = mo.id
   JOIN departamentos dp1 ON do.departamento_id = dp1.id
-  JOIN direcciones dd ON e.direccion_destino_id = dd.id
+  JOIN direcciones dd ON r.direccion_destino_id = dd.id
   JOIN zona zd ON dd.zona_id = zd.id
   JOIN municipios md ON dd.municipio_id = md.id
   JOIN departamentos dp2 ON dd.departamento_id = dp2.id
-  WHERE e.cliente_id = ?
-  ORDER BY e.created_at DESC
+  WHERE r.cliente_id = ?
+  ORDER BY r.created_at DESC
 ");
 $stmt->execute([$cliente_id]);
-$envios = $stmt->fetchAll();
+$recolecciones = $stmt->fetchAll();
 
 include 'partials/header.php';
 include 'partials/sidebar.php';
 ?>
 
 <div class="col-lg-10 col-12 p-4">
-  <h2>Mis Envíos</h2>
+  <h2>Mis Recolecciones</h2>
 
-  <?php if (empty($envios)): ?>
-    <div class="alert alert-info">No tienes envíos registrados.</div>
+  <?php if (empty($recolecciones)): ?>
+    <div class="alert alert-info">No tienes recolecciones registradas.</div>
   <?php else: ?>
     <div class="table-responsive">
       <table class="table table-bordered table-striped">
@@ -54,18 +54,18 @@ include 'partials/sidebar.php';
           </tr>
         </thead>
         <tbody>
-          <?php foreach ($envios as $e): ?>
+          <?php foreach ($recolecciones as $r): ?>
             <tr>
-              <td><?= "{$e['calle_origen']} #{$e['num_origen']}, Zona {$e['zona_origen']}, {$e['muni_origen']}, {$e['depto_origen']}" ?></td>
-              <td><?= "{$e['calle_destino']} #{$e['num_destino']}, Zona {$e['zona_destino']}, {$e['muni_destino']}, {$e['depto_destino']}" ?></td>
-              <td><?= $e['tamano'] ?></td>
-              <td><?= $e['peso'] ?> kg</td>
-              <td><?= ucfirst($e['estado_envio']) ?></td>
-              <td><?= date('d/m/Y H:i', strtotime($e['created_at'])) ?></td>
+              <td><?= "{$r['calle_origen']} #{$r['num_origen']}, Zona {$r['zona_origen']}, {$r['muni_origen']}, {$r['depto_origen']}" ?></td>
+              <td><?= "{$r['calle_destino']} #{$r['num_destino']}, Zona {$r['zona_destino']}, {$r['muni_destino']}, {$r['depto_destino']}" ?></td>
+              <td><?= $r['tamano'] ?></td>
+              <td><?= $r['peso'] ?> kg</td>
+              <td><?= ucfirst($r['estado_recoleccion']) ?></td>
+              <td><?= date('d/m/Y H:i', strtotime($r['created_at'])) ?></td>
               <td>
-  <?php if ($e['estado_envio'] === 'pendiente'): ?>
-    <form method="POST" action="cancelar_envio.php" onsubmit="return confirm('¿Cancelar este envío?');">
-      <input type="hidden" name="id" value="<?= $e['id'] ?>">
+  <?php if ($r['estado_recoleccion'] === 'pendiente'): ?>
+    <form method="POST" action="cancelar_recoleccion.php" onsubmit="return confirm('¿Cancelar esta recolección?');">
+      <input type="hidden" name="id" value="<?= $r['id'] ?>">
       <button type="submit" class="btn btn-danger btn-sm">Cancelar</button>
     </form>
   <?php else: ?>
