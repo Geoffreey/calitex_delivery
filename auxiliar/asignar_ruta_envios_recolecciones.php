@@ -15,7 +15,7 @@ $rutas = $pdo->query("SELECT id, nombre FROM rutas WHERE piloto_id IS NOT NULL O
 // Obtener recolecciones sin ruta y ya recibidas
 $recolecciones = $pdo->query("
   SELECT r.id, 'recoleccion' AS tipo, r.tamano, r.peso, r.created_at,
-         u.nombre AS cliente_nombre, u.apellido AS cliente_apellido
+  u.nombre AS cliente_nombre, u.apellido AS cliente_apellido
   FROM recolecciones r
   JOIN clientes c ON r.cliente_id = c.id
   JOIN users u ON u.id = c.user_id
