@@ -8,10 +8,6 @@ if (!isset($_SESSION['user_id']) || $_SESSION['rol'] !== 'piloto') {
 }
 
 $piloto_id = $_SESSION['user_id'];
-<<<<<<< HEAD
-
-=======
->>>>>>> 0352497 (Se copian archivos correctos)
 include 'partials/header.php';
 include 'partials/sidebar.php';
 
