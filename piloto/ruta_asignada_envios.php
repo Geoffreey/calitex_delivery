@@ -34,6 +34,22 @@ if (empty($rutas)) {
   exit;
 }
 
+// 👇🏽 AHORA definís $ruta_ids aquí
+$ruta_ids = array_column($rutas, 'id');
+$placeholders = implode(',', array_fill(0, count($ruta_ids), '?'));
+
+// ✅ AHORA sí podés usar $ruta_ids
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['envio_id'])) {
+  $envio_id = $_POST['envio_id'];
+
+  $stmt = $pdo->prepare("UPDATE envios SET estado_envio = 'recibido' WHERE id = ? AND ruta_id IN ($placeholders)");
+  $stmt->execute(array_merge([$envio_id], $ruta_ids));
+
+  header("Location: ruta_asignada_envios.php");
+  exit;
+}
+
+
 // Extraer los IDs de las rutas
 $ruta_ids = array_column($rutas, 'id');
 $placeholders = implode(',', array_fill(0, count($ruta_ids), '?'));
