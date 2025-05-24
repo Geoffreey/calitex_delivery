@@ -7,7 +7,7 @@ if (!isset($_SESSION['user_id']) || $_SESSION['rol'] !== 'piloto') {
   exit;
 }
 
-// Obtener ID del piloto
+/* Obtener ID del piloto a partir del user_id de sesión*/
 $stmt = $pdo->prepare("SELECT id FROM pilotos WHERE user_id = ?");
 $stmt->execute([$_SESSION['user_id']]);
 $piloto = $stmt->fetch();
@@ -23,7 +23,7 @@ $piloto_id = $piloto['id'];
 include 'partials/header.php';
 include 'partials/sidebar.php';
 
-// Obtener todas las rutas asignadas al piloto
+// Obtener TODAS las rutas del piloto
 $stmt = $pdo->prepare("SELECT id, nombre FROM rutas WHERE piloto_id = ?");
 $stmt->execute([$piloto_id]);
 $rutas = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -38,36 +38,27 @@ if (empty($rutas)) {
 $ruta_ids = array_column($rutas, 'id');
 $placeholders = implode(',', array_fill(0, count($ruta_ids), '?'));
 
-// Obtener recolecciones asignadas a esas rutas
+// Obtener envíos de esas rutas
 $stmt = $pdo->prepare("
-  SELECT r.id, r.tamano, r.peso, r.descripcion, r.created_at, r.ruta_recoleccion_id,
+  SELECT e.id, e.tamano, e.peso, e.descripcion, e.created_at, e.ruta_id,
          u.nombre AS cliente_nombre, u.apellido AS cliente_apellido,
-         rutas.nombre AS ruta_nombre
-  FROM recolecciones r
-  JOIN clientes c ON r.cliente_id = c.id
+         r.nombre AS ruta_nombre
+  FROM envios e
+  JOIN clientes c ON e.cliente_id = c.id
   JOIN users u ON c.user_id = u.id
-  JOIN rutas ON r.ruta_recoleccion_id = rutas.id
-  WHERE r.ruta_recoleccion_id IN ($placeholders) AND r.estado_recoleccion = 'pendiente'
-  ORDER BY r.created_at ASC
+  JOIN rutas r ON e.ruta_id = r.id
+  WHERE e.ruta_id IN ($placeholders) AND e.estado_envio = 'pendiente'
 ");
 $stmt->execute($ruta_ids);
-$recolecciones = $stmt->fetchAll();
+$envios = $stmt->fetchAll();
 
-// Confirmar recolección
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['recoleccion_id'])) {
-  $id = $_POST['recoleccion_id'];
-  $stmt = $pdo->prepare("UPDATE recolecciones SET estado_recoleccion = 'recibido' WHERE id = ?");
-  $stmt->execute([$id]);
-  header("Location: ruta_asignada_recoleccion.php");
-  exit;
-}
 ?>
 
 <div class="col-lg-10 col-12 p-4">
-  <h2>Recolecciones asignadas</h2>
+  <h2>Envíos asignados</h2>
 
-  <?php if (empty($recolecciones)): ?>
-    <div class="alert alert-info">No tienes recolecciones pendientes por recoger.</div>
+  <?php if (empty($envios)): ?>
+    <div class="alert alert-info">No tienes envios pendientes por entregar.</div>
   <?php else: ?>
     <table class="table table-bordered table-striped">
       <thead class="table-light">
@@ -82,18 +73,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['recoleccion_id'])) {
         </tr>
       </thead>
       <tbody>
-        <?php foreach ($recolecciones as $r): ?>
+        <?php foreach ($envios as $r): ?>
           <tr>
             <td><?= htmlspecialchars($r['ruta_nombre']) ?></td>
             <td><?= $r['cliente_nombre'] . ' ' . $r['cliente_apellido'] ?></td>
             <td><?= $r['tamano'] ?></td>
             <td><?= $r['peso'] ?> kg</td>
-            <td><?= $r['descripcion'] ?></td>
+            <td><?= $r['descripcion'] ?></td> 
             <td><?= date('d/m/Y H:i', strtotime($r['created_at'])) ?></td>
             <td>
-              <form method="POST" onsubmit="return confirm('¿Confirmar recolección del paquete?');">
-                <input type="hidden" name="recoleccion_id" value="<?= $r['id'] ?>">
-                <button type="submit" class="btn btn-success btn-sm">Recogido</button>
+              <form method="POST" onsubmit="return confirm('¿Confirmar entrega del paquete?');">
+                <input type="hidden" name="envio_id" value="<?= $r['id'] ?>">
+                <button type="submit" class="btn btn-success btn-sm">Entregado</button>
               </form>
             </td>
           </tr>
