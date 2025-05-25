@@ -10,7 +10,7 @@ if (!isset($_SESSION['user_id']) || $_SESSION['rol'] !== 'auxiliar') {
 include 'partials/header.php';
 include 'partials/sidebar.php';
 
-// Rutas disponibles
+// Obtener rutas disponibles con piloto asignado
 $rutas = $pdo->query("
   SELECT id, nombre 
   FROM rutas 
@@ -18,18 +18,18 @@ $rutas = $pdo->query("
   ORDER BY id DESC
 ")->fetchAll();
 
-// Recolecciones pendientes sin ruta de recolección asignada
+// Obtener recolecciones que ya fueron recibidas pero no tienen ruta de entrega asignada
 $recolecciones = $pdo->query("
   SELECT r.id, r.tamano, r.peso, r.created_at,
          u.nombre AS cliente_nombre, u.apellido AS cliente_apellido
   FROM recolecciones r
   JOIN clientes c ON r.cliente_id = c.id
   JOIN users u ON c.user_id = u.id
-  WHERE TRIM(LOWER(r.estado_recoleccion)) = 'pendiente' AND r.ruta_recoleccion_id IS NULL
+  WHERE TRIM(LOWER(r.estado_recoleccion)) = 'recibido' AND r.ruta_entrega_id IS NULL
   ORDER BY r.created_at ASC
 ")->fetchAll();
 
-// Procesar asignación de ruta
+// Procesar asignación de ruta de entrega
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['recoleccion_id'], $_POST['ruta_id'])) {
   $recoleccion_id = $_POST['recoleccion_id'];
   $ruta_id = $_POST['ruta_id'];
@@ -39,29 +39,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['recoleccion_id'], $_P
   $stmtPiloto->execute([$ruta_id]);
   $piloto_id = $stmtPiloto->fetchColumn();
 
-  // Actualizar recolección con la ruta asignada
-  $stmt = $pdo->prepare("UPDATE recolecciones SET ruta_recoleccion_id = ? WHERE id = ?");
+  // Asignar la ruta de entrega
+  $stmt = $pdo->prepare("UPDATE recolecciones SET ruta_entrega_id = ? WHERE id = ?");
   $stmt->execute([$ruta_id, $recoleccion_id]);
 
-  // Guardar en historial
-  $stmtHistorial = $pdo->prepare("
-    INSERT INTO historial_asignaciones_recolecciones (ruta_id, piloto_id, tipo_asignacion, tipo_recoleccion, semana_asignada, estado)
-    VALUES (?, ?, 'principal', 'recoleccion', ?, 'pendiente')
+  // Insertar en historial
+  $stmtHist = $pdo->prepare("
+    INSERT INTO historial_asignaciones_recolecciones 
+    (ruta_id, piloto_id, tipo_asignacion, tipo_recoleccion, semana_asignada, estado)
+    VALUES (?, ?, 'principal', 'entrega', ?, 'pendiente')
   ");
-  $semana = date('Y-\WW'); // Semana ISO
-  $stmtHistorial->execute([$ruta_id, $piloto_id, $semana]);
+  $semana = date('Y-\WW'); // Semana ISO tipo 2025-W22
+  $stmtHist->execute([$ruta_id, $piloto_id, $semana]);
 
-  header("Location: asignar_ruta_recolecciones.php");
+  header("Location: asignar_ruta_entrega_recoleccion.php");
   exit;
 }
-
 ?>
 
 <div class="col-lg-10 col-12 p-4">
-  <h2>Asignar Ruta para Recolección</h2>
+  <h2>Asignar Ruta para Entrega de Recolecciones</h2>
 
   <?php if (empty($recolecciones)): ?>
-    <div class="alert alert-info">No hay recolecciones pendientes para asignar ruta.</div>
+    <div class="alert alert-info">No hay recolecciones pendientes de entrega para asignar ruta.</div>
   <?php else: ?>
     <div class="table-responsive">
       <table class="table table-bordered table-striped">

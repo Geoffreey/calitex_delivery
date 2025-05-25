@@ -12,16 +12,6 @@ include 'partials/sidebar.php';
 
 // Obtener rutas disponibles
 $rutas = $pdo->query("SELECT id, nombre FROM rutas WHERE piloto_id IS NOT NULL ORDER BY id DESC")->fetchAll();
-// Obtener recolecciones sin ruta y ya recibidas
-$recolecciones = $pdo->query("
-  SELECT r.id, 'recoleccion' AS tipo, r.tamano, r.peso, r.created_at,
-  u.nombre AS cliente_nombre, u.apellido AS cliente_apellido
-  FROM recolecciones r
-  JOIN clientes c ON r.cliente_id = c.id
-  JOIN users u ON u.id = c.user_id
-  WHERE TRIM(LOWER(r.estado_recoleccion)) = 'recibido' AND r.ruta_id IS NULL
-  ORDER BY r.created_at ASC
-")->fetchAll();
 
 // Obtener envíos sin ruta
 $envios = $pdo->query("
@@ -33,9 +23,6 @@ $envios = $pdo->query("
   WHERE e.estado_envio = 'pendiente' AND e.ruta_id IS NULL
   ORDER BY e.created_at ASC
 ")->fetchAll();
-
-// Unir ambos
-$solicitudes = array_merge($recolecciones, $envios);
 
 // Procesar asignación
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
