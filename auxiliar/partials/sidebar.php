@@ -43,7 +43,8 @@
   </div>
   <div class="offcanvas-body list-group list-group-flush">
     <a href="dashboard.php" class="list-group-item list-group-item-action">Inicio</a>
-    <!--<a href="clientes.php" class="list-group-item list-group-item-action">Clientes</a>-->
+    <a href="clientes.php" class="list-group-item list-group-item-action">Crear envio</a>
+    <a href="clientes.php" class="list-group-item list-group-item-action">Crear recoleccion</a>
 
     <!-- RUTAS - menú colapsable -->
     <a class="list-group-item list-group-item-action" data-bs-toggle="collapse" href="#submenuRutasMovil" role="button" aria-expanded="false" aria-controls="submenuRutasMovil">
@@ -77,7 +78,8 @@
 <div class="col-lg-2 d-none d-lg-block bg-light border-end vh-100">
   <div class="list-group list-group-flush mt-3">
     <a href="dashboard.php" class="list-group-item list-group-item-action">Inicio</a>
-    <!--<a href="clientes.php" class="list-group-item list-group-item-action">Clientes</a>-->
+    <a href="clientes.php" class="list-group-item list-group-item-action">Crear envio</a>
+    <a href="clientes.php" class="list-group-item list-group-item-action">Crear recoleccion</a>
 
     <!-- PILOTOS - menú colapsable -->
     <a class="list-group-item list-group-item-action" data-bs-toggle="collapse" href="#submenuRutas" role="button" aria-expanded="false" aria-controls="submenuRutas">

@@ -53,15 +53,20 @@ $query = $pdo->query("
           <td><?= $p['muni_origen'] ?> - Zona <?= $p['zona_origen'] ?></td>
           <td><?= $p['muni_destino'] ?> - Zona <?= $p['zona_destino'] ?></td>
           <td>
-            <span class="badge bg-<?= match($p['estado_envio']) {
-              'pendiente' => 'secondary',
-              'en_proceso' => 'warning',
-              'entregado' => 'success',
-              'anulado' => 'danger',
-              default => 'light'
-            } ?>">
-              <?= ucfirst($p['estado_envio']) ?>
-            </span>
+            <?php
+$estado = $p['estado_envio'];
+$colores = [
+  'pendiente'   => 'secondary',
+  'en_proceso'  => 'warning',
+  'entregado'   => 'success',
+  'anulado'     => 'danger'
+];
+$color = $colores[$estado] ?? 'light';
+?>
+<span class="badge bg-<?= $color ?>">
+  <?= ucfirst($estado) ?>
+</span>
+
           </td>
           <td><?= date('d/m/Y H:i', strtotime($p['created_at'])) ?></td>
           <td>
