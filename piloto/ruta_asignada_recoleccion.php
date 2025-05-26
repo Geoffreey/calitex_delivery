@@ -57,58 +57,36 @@ $recolecciones = $stmt->fetchAll();
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['recoleccion_id'])) {
   $id = $_POST['recoleccion_id'];
 
-  // 1. Marcar recolección como recibida
+  // Marcar como recibida
   $stmt = $pdo->prepare("UPDATE recolecciones SET estado_recoleccion = 'recibido' WHERE id = ?");
   $stmt->execute([$id]);
 
-  // 2. Obtener la ruta de recolección
   $stmtRuta = $pdo->prepare("SELECT ruta_recoleccion_id FROM recolecciones WHERE id = ?");
   $stmtRuta->execute([$id]);
   $ruta_id = $stmtRuta->fetchColumn();
 
   if ($ruta_id) {
-    // 3. Verificar si ya todas las recolecciones fueron recibidas o canceladas
     $stmtCheck = $pdo->prepare("
       SELECT COUNT(*) FROM recolecciones 
       WHERE ruta_recoleccion_id = ? 
-      AND estado_recoleccion NOT IN ('recibido', 'cancelado')
+      AND estado_recoleccion NOT IN ('recibido', 'entregado', 'cancelado')
     ");
     $stmtCheck->execute([$ruta_id]);
     $pendientes = $stmtCheck->fetchColumn();
 
     if ($pendientes == 0) {
-      // 4. Marcar en historial como completada
-      // Obtener el ID del historial más reciente pendiente
-$stmtGet = $pdo->prepare("
-  SELECT id FROM historial_asignaciones_recolecciones
-  WHERE ruta_id = ? AND tipo_recoleccion = 'recoleccion' AND estado = 'pendiente'
-  ORDER BY fecha_asignacion DESC
-  LIMIT 1
-");
-$stmtGet->execute([$ruta_id]);
-$historial_id = $stmtGet->fetchColumn();
-
-// Si se encontró, actualizarlo
-if ($historial_id) {
-  $stmtUpdate = $pdo->prepare("
-    UPDATE historial_asignaciones_recolecciones
-    SET estado = 'completada'
-    WHERE id = ?
-  ");
-  $stmtUpdate->execute([$historial_id]);
-}
-
-
-
-      // 5. (opcional) Marcar la ruta como inactiva
-      $pdo->prepare("UPDATE rutas SET estado = 0 WHERE id = ?")->execute([$ruta_id]);
+      $stmtUpdate = $pdo->prepare("
+        UPDATE historial_asignaciones_recolecciones 
+        SET estado = 'completada' 
+        WHERE ruta_id = ? AND tipo_recoleccion = 'recoleccion' AND estado = 'pendiente'
+      ");
+      $stmtUpdate->execute([$ruta_id]);
     }
   }
 
   header("Location: ruta_asignada_recoleccion.php");
   exit;
 }
-
 ?>
 
 <div class="col-lg-10 col-12 p-4">
