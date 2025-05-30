@@ -15,11 +15,12 @@ if (!$id) {
 }
 
 try {
-  $stmt = $pdo->prepare("UPDATE paquetes SET estado_envio = 'anulado' WHERE id = ?");
+  // Eliminar directamente sin validar relaciones
+  $stmt = $pdo->prepare("DELETE FROM paquetes WHERE id = ?");
   $stmt->execute([$id]);
 
   header("Location: paquetes.php");
   exit;
 } catch (Exception $e) {
-  echo "Error al anular paquete: " . $e->getMessage();
+  echo "Error al eliminar paquete: " . $e->getMessage();
 }

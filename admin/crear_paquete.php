@@ -7,39 +7,16 @@ if (!isset($_SESSION['user_id']) || $_SESSION['rol'] !== 'admin') {
   exit;
 }
 
-// Obtener clientes
-$clientes = $pdo->query("SELECT c.id, u.nombre, u.apellido FROM clientes c JOIN users u ON c.user_id = u.id WHERE u.estado = 1 ORDER BY u.nombre")->fetchAll();
-
-// Obtener zonas
-$zonas = $pdo->query("SELECT z.id, z.numero, m.nombre AS municipio FROM zona z JOIN municipios m ON z.municipio_id = m.id ORDER BY m.nombre, z.numero")->fetchAll();
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-  $cliente_id     = $_POST['cliente_id'];
-  $tamano         = $_POST['tamano'];
-  $peso           = $_POST['peso'];
-  $descripcion    = $_POST['descripcion'];
-  $zona_origen_id = $_POST['zona_origen_id'];
-  $zona_destino_id= $_POST['zona_destino_id'];
-
-  // Buscar tarifa automáticamente
-  $stmt = $pdo->prepare("
-    SELECT id FROM tarifas 
-    WHERE zona_origen_id = ? AND zona_destino_id = ? 
-    AND tamano = ? 
-    AND peso_min <= ? AND peso_max >= ?
-    LIMIT 1
-  ");
-  $stmt->execute([$zona_origen_id, $zona_destino_id, $tamano, $peso, $peso]);
-  $tarifa = $stmt->fetch();
-  $tarifa_id = $tarifa ? $tarifa['id'] : null;
+  $nombre      = $_POST['nombre'];
+  $tamano      = $_POST['tamano'];
+  $peso        = $_POST['peso'];
+  $tarifa      = $_POST['tarifa'];
+  $descripcion = $_POST['descripcion'];
 
   try {
-    $stmt = $pdo->prepare("
-      INSERT INTO paquetes 
-      (cliente_id, tamano, peso, descripcion, zona_origen_id, zona_destino_id, tarifa_id) 
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    ");
-    $stmt->execute([$cliente_id, $tamano, $peso, $descripcion, $zona_origen_id, $zona_destino_id, $tarifa_id]);
+    $stmt = $pdo->prepare("INSERT INTO paquetes (nombre, tamano, peso, tarifa, descripcion) VALUES (?, ?, ?, ?, ?)");
+    $stmt->execute([$nombre, $tamano, $peso, $tarifa, $descripcion]);
 
     header("Location: paquetes.php");
     exit;
@@ -53,42 +30,23 @@ include 'partials/sidebar.php';
 ?>
 
 <div class="col-lg-10 col-12 p-4">
-  <h2>Nuevo Paquete</h2>
+  <h2>Nuevo Tipo de Paquete</h2>
   <form method="POST" class="row g-3">
-    <div class="col-md-6">
-      <label class="form-label">Cliente</label>
-      <select name="cliente_id" class="form-select" required>
-        <option value="">Seleccione un cliente</option>
-        <?php foreach ($clientes as $cli): ?>
-          <option value="<?= $cli['id'] ?>"><?= htmlspecialchars($cli['nombre'] . ' ' . $cli['apellido']) ?></option>
-        <?php endforeach; ?>
-      </select>
+    <div class="col-md-4">
+      <label class="form-label">Nombre o Tipo</label>
+      <input type="text" name="nombre" class="form-control" required>
     </div>
-    <div class="col-md-3">
+    <div class="col-md-4">
       <label class="form-label">Tamaño</label>
       <input type="text" name="tamano" class="form-control" required>
     </div>
-    <div class="col-md-3">
-      <label class="form-label">Peso (kg)</label>
+    <div class="col-md-4">
+      <label class="form-label">Peso Referencial (kg)</label>
       <input type="number" step="0.01" name="peso" class="form-control" required>
     </div>
-    <div class="col-md-6">
-      <label class="form-label">Zona de Origen</label>
-      <select name="zona_origen_id" class="form-select" required>
-        <option value="">Seleccione zona origen</option>
-        <?php foreach ($zonas as $z): ?>
-          <option value="<?= $z['id'] ?>"><?= $z['municipio'] ?> - Zona <?= $z['numero'] ?></option>
-        <?php endforeach; ?>
-      </select>
-    </div>
-    <div class="col-md-6">
-      <label class="form-label">Zona de Destino</label>
-      <select name="zona_destino_id" class="form-select" required>
-        <option value="">Seleccione zona destino</option>
-        <?php foreach ($zonas as $z): ?>
-          <option value="<?= $z['id'] ?>"><?= $z['municipio'] ?> - Zona <?= $z['numero'] ?></option>
-        <?php endforeach; ?>
-      </select>
+    <div class="col-md-4">
+      <label class="form-label">Tarifa (Q)</label>
+      <input type="number" step="0.01" name="tarifa" class="form-control" required>
     </div>
     <div class="col-12">
       <label class="form-label">Descripción</label>
