@@ -52,7 +52,7 @@
     </a>
     <div class="collapse ps-3" id="submenuRutasMovil">
       <a href="asignar_ruta_envios.php" class="list-group-item list-group-item-action">Ruta para envios</a>
-      <a href="historial_asignaciones_recoleccion.php" class="list-group-item list-group-item-action">Ruta para recolecciones</a>
+      <a href="asignar_ruta_recolecciones.php" class="list-group-item list-group-item-action">Ruta para recolecciones</a>
       <a href="asignar_ruta_entrega_recoleccion.php" class="list-group-item list-group-item-action">Ruta para envio de recoleccion</a>
     </div>
 
@@ -87,7 +87,7 @@
     </a>
     <div class="collapse ps-3" id="submenuRutas">
       <a href="asignar_ruta_envios.php" class="list-group-item list-group-item-action">Ruta para envios</a>
-      <a href="historial_asignaciones_recoleccion.php" class="list-group-item list-group-item-action">Ruta para recolecciones</a>
+      <a href="asignar_ruta_recolecciones.php" class="list-group-item list-group-item-action">Ruta para recolecciones</a>
       <a href="asignar_ruta_entrega_recoleccion.php" class="list-group-item list-group-item-action">Ruta para envio de recoleccion</a>
     </div>
 

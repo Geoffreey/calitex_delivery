@@ -46,32 +46,47 @@ include 'partials/sidebar.php';
           <tr>
             <th>Origen</th>
             <th>Destino</th>
-            <th>Tamaño</th>
-            <th>Peso</th>
+            <th>Paquetes</th>
             <th>Estado</th>
             <th>Fecha</th>
-            <th>Accion</th>
+            <th>Acción</th>
           </tr>
         </thead>
         <tbody>
           <?php foreach ($envios as $e): ?>
+            <?php
+              // Obtener los paquetes asociados a este envío
+              $stmt_pq = $pdo->prepare("
+                SELECT p.nombre, p.tamano, p.peso
+                FROM envios_paquetes ep
+                JOIN paquetes p ON ep.paquete_id = p.id
+                WHERE ep.envio_id = ?
+              ");
+              $stmt_pq->execute([$e['id']]);
+              $paquetes = $stmt_pq->fetchAll();
+            ?>
             <tr>
               <td><?= "{$e['calle_origen']} #{$e['num_origen']}, Zona {$e['zona_origen']}, {$e['muni_origen']}, {$e['depto_origen']}" ?></td>
               <td><?= "{$e['calle_destino']} #{$e['num_destino']}, Zona {$e['zona_destino']}, {$e['muni_destino']}, {$e['depto_destino']}" ?></td>
-              <td><?= $e['tamano'] ?></td>
-              <td><?= $e['peso'] ?> kg</td>
+              <td>
+                <ul class="mb-0">
+                  <?php foreach ($paquetes as $p): ?>
+                    <li><?= "{$p['nombre']} - {$p['tamano']} ({$p['peso']} kg)" ?></li>
+                  <?php endforeach; ?>
+                </ul>
+              </td>
               <td><?= ucfirst($e['estado_envio']) ?></td>
               <td><?= date('d/m/Y H:i', strtotime($e['created_at'])) ?></td>
               <td>
-  <?php if ($e['estado_envio'] === 'pendiente'): ?>
-    <form method="POST" action="cancelar_envio.php" onsubmit="return confirm('¿Cancelar este envío?');">
-      <input type="hidden" name="id" value="<?= $e['id'] ?>">
-      <button type="submit" class="btn btn-danger btn-sm">Cancelar</button>
-    </form>
-  <?php else: ?>
-    <span class="text-muted">No disponible</span>
-  <?php endif; ?>
-</td>
+                <?php if ($e['estado_envio'] === 'pendiente'): ?>
+                  <form method="POST" action="cancelar_envio.php" onsubmit="return confirm('¿Cancelar este envío?');">
+                    <input type="hidden" name="id" value="<?= $e['id'] ?>">
+                    <button type="submit" class="btn btn-danger btn-sm">Cancelar</button>
+                  </form>
+                <?php else: ?>
+                  <span class="text-muted">No disponible</span>
+                <?php endif; ?>
+              </td>
             </tr>
           <?php endforeach; ?>
         </tbody>

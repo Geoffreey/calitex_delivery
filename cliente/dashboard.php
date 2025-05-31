@@ -12,25 +12,25 @@ $user_id = $_SESSION['user_id'];
 // Obtener el ID del cliente
 $stmt = $pdo->prepare("SELECT id FROM clientes WHERE user_id = ?");
 $stmt->execute([$user_id]);
-$cliente = $stmt->fetch();
-$cliente_id = $cliente['id'] ?? 0;
+$cliente_id = $stmt->fetchColumn();
 
-// Consultar resumen
+// Consultar resumen desde tabla 'envios'
 $resumen = $pdo->prepare("
   SELECT estado_envio, COUNT(*) AS total
-  FROM paquetes
+  FROM envios
   WHERE cliente_id = ?
   GROUP BY estado_envio
 ");
 $resumen->execute([$cliente_id]);
 
+// Inicializar todos los posibles estados
 $estado = [
-  'pendiente' => 0,
-  'en_proceso' => 0,
-  'entregado' => 0,
-  'anulado' => 0
+  'pendiente'  => 0,
+  'recibido'   => 0,
+  'cancelado'  => 0
 ];
 
+// Llenar resultados
 foreach ($resumen->fetchAll() as $r) {
   $estado[$r['estado_envio']] = $r['total'];
 }
@@ -44,7 +44,7 @@ include 'partials/sidebar.php';
   <p class="lead">Resumen de tus envíos</p>
 
   <div class="row">
-    <div class="col-md-6 col-xl-3 mb-3">
+    <div class="col-md-4 mb-3">
       <div class="card text-bg-secondary h-100 shadow-sm text-center">
         <div class="card-body">
           <h5>Pendientes</h5>
@@ -52,27 +52,19 @@ include 'partials/sidebar.php';
         </div>
       </div>
     </div>
-    <div class="col-md-6 col-xl-3 mb-3">
-      <div class="card text-bg-warning h-100 shadow-sm text-center">
-        <div class="card-body">
-          <h5>En proceso</h5>
-          <h2><?= $estado['en_proceso'] ?></h2>
-        </div>
-      </div>
-    </div>
-    <div class="col-md-6 col-xl-3 mb-3">
+    <div class="col-md-4 mb-3">
       <div class="card text-bg-success h-100 shadow-sm text-center">
         <div class="card-body">
-          <h5>Entregados</h5>
-          <h2><?= $estado['entregado'] ?></h2>
+          <h5>Recibidos</h5>
+          <h2><?= $estado['recibido'] ?></h2>
         </div>
       </div>
     </div>
-    <div class="col-md-6 col-xl-3 mb-3">
+    <div class="col-md-4 mb-3">
       <div class="card text-bg-danger h-100 shadow-sm text-center">
         <div class="card-body">
-          <h5>Anulados</h5>
-          <h2><?= $estado['anulado'] ?></h2>
+          <h5>Cancelados</h5>
+          <h2><?= $estado['cancelado'] ?></h2>
         </div>
       </div>
     </div>

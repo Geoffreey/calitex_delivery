@@ -7,22 +7,25 @@ if (!isset($_SESSION['user_id']) || $_SESSION['rol'] !== 'auxiliar') {
   exit;
 }
 
-include 'partials/header.php';
-include 'partials/sidebar.php';
-
 // Obtener rutas disponibles
 $rutas = $pdo->query("SELECT id, nombre FROM rutas WHERE piloto_id IS NOT NULL ORDER BY id DESC")->fetchAll();
 
 // Obtener envíos sin ruta
 $envios = $pdo->query("
-  SELECT e.id, 'envio' AS tipo, e.tamano, e.peso, e.created_at,
-         u.nombre AS cliente_nombre, u.apellido AS cliente_apellido
+  SELECT e.id, 'envio' AS tipo, e.created_at,
+         u.nombre AS cliente_nombre, u.apellido AS cliente_apellido,
+         d.calle, d.numero, z.numero AS zona, m.nombre AS municipio, dp.nombre AS departamento
   FROM envios e
   JOIN clientes c ON e.cliente_id = c.id
   JOIN users u ON c.user_id = u.id
+  JOIN direcciones d ON e.direccion_origen_id = d.id
+  JOIN zona z ON d.zona_id = z.id
+  JOIN municipios m ON d.municipio_id = m.id
+  JOIN departamentos dp ON d.departamento_id = dp.id
   WHERE e.estado_envio = 'pendiente' AND e.ruta_id IS NULL
   ORDER BY e.created_at ASC
 ")->fetchAll();
+
 
 // Procesar asignación
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -37,15 +40,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   }
 
   $stmt->execute([$ruta_id, $id]);
-  header("Location: asignar_ruta_envios_recolecciones.php");
+  header("Location: asignar_ruta_envios.php");
   exit;
 }
+include 'partials/header.php';
+include 'partials/sidebar.php';
 ?>
 
 <div class="col-lg-10 col-12 p-4">
-  <h2>Asignar Ruta a Recolecciones y Envíos</h2>
+  <h2>Asignar Ruta a Envíos</h2>
 
-  <?php if (empty($solicitudes)): ?>
+  <?php if (empty($envios)): ?>
     <div class="alert alert-info">No hay recolecciones ni envíos pendientes por asignar a ruta.</div>
   <?php else: ?>
     <div class="table-responsive">
@@ -54,19 +59,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           <tr>
             <th>Tipo</th>
             <th>Cliente</th>
-            <th>Tamaño</th>
-            <th>Peso</th>
+            <th>Dirección</th>
             <th>Fecha</th>
             <th>Asignar Ruta</th>
           </tr>
         </thead>
         <tbody>
-          <?php foreach ($solicitudes as $s): ?>
+          <?php foreach ($envios as $s): ?>
             <tr>
               <td><?= ucfirst($s['tipo']) ?></td>
               <td><?= $s['cliente_nombre'] . ' ' . $s['cliente_apellido'] ?></td>
-              <td><?= $s['tamano'] ?></td>
-              <td><?= $s['peso'] ?> kg</td>
+              <td><?= "{$s['calle']} #{$s['numero']}, Zona {$s['zona']}, {$s['municipio']}, {$s['departamento']}" ?></td>
               <td><?= date('d/m/Y H:i', strtotime($s['created_at'])) ?></td>
               <td>
                 <form method="POST" class="d-flex">
