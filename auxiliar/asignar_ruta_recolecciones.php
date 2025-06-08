@@ -1,4 +1,5 @@
 <?php
+ob_start();
 session_start();
 require_once '../config/db.php';
 
@@ -20,18 +21,20 @@ $rutas = $pdo->query("
 
 // Recolecciones pendientes sin ruta de recolección asignada
 $recolecciones = $pdo->query("
-  SELECT r.id, r.created_at,
-         u.nombre AS cliente_nombre, u.apellido AS cliente_apellido
+  SELECT r.id, r.created_at, r.descripcion,
+         u.nombre AS cliente_nombre, 
+         u.apellido AS cliente_apellido,
+         u.telefono AS telefono,
          d.calle, d.numero,
          z.numero AS zona,
          m.nombre AS municipio,
-         dept.nombre AS departament
+         dept.nombre AS departamento
   FROM recolecciones r
   JOIN clientes c ON r.cliente_id = c.id
   JOIN users u ON c.user_id = u.id
   JOIN direcciones d ON r.direccion_origen_id = d.id
   LEFT JOIN zona z ON d.zona_id = z.id
-  LEFT JOIN municipios m ON d.muinicipio_id = m.id
+  LEFT JOIN municipios m ON d.municipio_id = m.id
   LEFT JOIN departamentos dept ON d.departamento_id = dept.id
   WHERE TRIM(LOWER(r.estado_recoleccion)) = 'pendiente' AND r.ruta_recoleccion_id IS NULL
   ORDER BY r.created_at ASC

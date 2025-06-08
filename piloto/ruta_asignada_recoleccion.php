@@ -40,7 +40,7 @@ $placeholders = implode(',', array_fill(0, count($ruta_ids), '?'));
 
 // Obtener recolecciones asignadas a esas rutas
 $stmt = $pdo->prepare("
-  SELECT r.id AS recoleccion_id, r.created_at, r.ruta_recoleccion_id,
+  SELECT r.id AS recoleccion_id, r.descripcion, r.created_at, r.ruta_recoleccion_id,
          u.nombre AS cliente_nombre, u.apellido AS cliente_apellido, u.telefono,
          d.calle, d.numero, 
          z.numero AS zona, 
@@ -102,6 +102,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           <th>Cliente</th>
           <th>Teléfono</th>
           <th>Dirección</th>
+          <th>Decripción</th>
           <th>Fecha</th>
           <th>Acciones</th>
         </tr>
@@ -115,6 +116,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <td>
               <?= $r['calle'] . ' ' . $r['numero'] . ', Zona ' . $r['zona'] . ', ' . $r['municipio'] . ', ' . $r['departamento'] ?>
             </td>
+            <td><?= $r['descripcion'] ?></td>
             <td><?= date('d/m/Y H:i', strtotime($r['created_at'])) ?></td>
             <td class="d-flex gap-2">
               <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalFirma" data-recoleccion-id="<?= $r['recoleccion_id'] ?>">Recogido</button>
