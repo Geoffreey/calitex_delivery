@@ -20,11 +20,19 @@ $rutas = $pdo->query("
 
 // Recolecciones pendientes sin ruta de recolección asignada
 $recolecciones = $pdo->query("
-  SELECT r.id, r.tamano, r.peso, r.created_at,
+  SELECT r.id, r.created_at,
          u.nombre AS cliente_nombre, u.apellido AS cliente_apellido
+         d.calle, d.numero,
+         z.numero AS zona,
+         m.nombre AS municipio,
+         dept.nombre AS departament
   FROM recolecciones r
   JOIN clientes c ON r.cliente_id = c.id
   JOIN users u ON c.user_id = u.id
+  JOIN direcciones d ON r.direccion_origen_id = d.id
+  LEFT JOIN zona z ON d.zona_id = z.id
+  LEFT JOIN municipios m ON d.muinicipio_id = m.id
+  LEFT JOIN departamentos dept ON d.departamento_id = dept.id
   WHERE TRIM(LOWER(r.estado_recoleccion)) = 'pendiente' AND r.ruta_recoleccion_id IS NULL
   ORDER BY r.created_at ASC
 ")->fetchAll();
@@ -68,8 +76,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['recoleccion_id'], $_P
         <thead class="table-light">
           <tr>
             <th>Cliente</th>
-            <th>Tamaño</th>
-            <th>Peso</th>
+            <th>Direccion</th>
             <th>Fecha</th>
             <th>Asignar Ruta</th>
           </tr>
@@ -78,8 +85,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['recoleccion_id'], $_P
           <?php foreach ($recolecciones as $r): ?>
             <tr>
               <td><?= $r['cliente_nombre'] . ' ' . $r['cliente_apellido'] ?></td>
-              <td><?= $r['tamano'] ?></td>
-              <td><?= $r['peso'] ?> kg</td>
+              <td><?= "{$r['calle']} #{$r['numero']}, Zona {$r['zona']}, {$r['municipio']}, {$r['departamento']}" ?></td>
               <td><?= date('d/m/Y H:i', strtotime($r['created_at'])) ?></td>
               <td>
                 <form method="POST" class="d-flex">
