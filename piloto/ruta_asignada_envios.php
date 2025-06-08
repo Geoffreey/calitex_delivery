@@ -35,62 +35,50 @@ if (empty($rutas)) {
 $ruta_ids = array_column($rutas, 'id');
 $placeholders = implode(',', array_fill(0, count($ruta_ids), '?'));
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['envio_id'])) {
-  $envio_id = $_POST['envio_id'];
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+  if (isset($_POST['envio_id']) && isset($_POST['accion'])) {
+    $envio_id = $_POST['envio_id'];
+    $accion = $_POST['accion'];
 
-  // Obtener la ruta_id del envío
-  $stmtRuta = $pdo->prepare("SELECT ruta_id FROM envios WHERE id = ?");
-  $stmtRuta->execute([$envio_id]);
-  $ruta_id = $stmtRuta->fetchColumn();
+    if ($accion === 'entregado' && !empty($_POST['firma_base64'])) {
+      $firma_data = $_POST['firma_base64'];
+      $firma_data = str_replace('data:image/png;base64,', '', $firma_data);
+      $firma_data = str_replace(' ', '+', $firma_data);
+      $firma_bin = base64_decode($firma_data);
 
-  // Actualizar estado del envío
-  $stmt = $pdo->prepare("UPDATE envios SET estado_envio = 'recibido' WHERE id = ? AND ruta_id IN ($placeholders)");
-  $stmt->execute(array_merge([$envio_id], $ruta_ids));
+      $firma_nombre = 'firma_' . $envio_id . '_' . time() . '.png';
+      $firma_path = '../firmas/' . $firma_nombre;
+      file_put_contents($firma_path, $firma_bin);
 
-  // Verificar si la ruta ahora tiene todos los envíos entregados o cancelados
-$ruta_actual_stmt = $pdo->prepare("SELECT ruta_id FROM envios WHERE id = ?");
-$ruta_actual_stmt->execute([$envio_id]);
-$ruta_id_entregada = $ruta_actual_stmt->fetchColumn();
+      $stmt = $pdo->prepare("UPDATE envios SET estado_envio = 'recibido', firma = ? WHERE id = ? AND ruta_id IN ($placeholders)");
+      $stmt->execute(array_merge([$firma_path, $envio_id], $ruta_ids));
+    } elseif ($accion === 'cancelado') {
+      $stmt = $pdo->prepare("UPDATE envios SET estado_envio = 'cancelado' WHERE id = ? AND ruta_id IN ($placeholders)");
+      $stmt->execute(array_merge([$envio_id], $ruta_ids));
+    }
 
-$pendientes_stmt = $pdo->prepare("SELECT COUNT(*) FROM envios WHERE ruta_id = ? AND estado_envio NOT IN ('recibido', 'cancelado')");
-$pendientes_stmt->execute([$ruta_id_entregada]);
-$pendientes = $pendientes_stmt->fetchColumn();
-
-if ($pendientes == 0) {
-    // Actualiza la tabla rutas
-    $pdo->prepare("UPDATE rutas SET estado = 0 WHERE id = ?")->execute([$ruta_id_entregada]);
-
-    // Y el historial (si lo estás usando para mostrar también el estado)
-    $pdo->prepare("UPDATE historial_asignaciones SET estado = 'completada' WHERE ruta_id = ?")->execute([$ruta_id_entregada]);
-}
-
-
-  // Verificar si todos los envíos de esa ruta están completados
-  $stmtCheck = $pdo->prepare("
-    SELECT COUNT(*) FROM envios 
-    WHERE ruta_id = ? AND estado_envio NOT IN ('recibido', 'cancelado')
-  ");
-  $stmtCheck->execute([$ruta_id]);
-  $pendientes = $stmtCheck->fetchColumn();
-
-  if ($pendientes == 0) {
-    $stmtFinalizar = $pdo->prepare("UPDATE rutas SET estado = 0 WHERE id = ?");
-    $stmtFinalizar->execute([$ruta_id]);
+    header("Location: ruta_asignada_envios.php");
+    exit;
   }
-
-  header("Location: ruta_asignada_envios.php");
-  exit;
 }
 
 $stmt = $pdo->prepare("
-  SELECT e.id, e.tamano, e.peso, e.descripcion, e.created_at, e.ruta_id,
-         u.nombre AS cliente_nombre, u.apellido AS cliente_apellido,
-         r.nombre AS ruta_nombre
+  SELECT 
+    e.id AS envio_id,
+    e.created_at,
+    e.nombre_destinatario,
+    e.telefono_destinatario,
+    d.calle, d.numero AS numero_direccion,
+    z.numero AS zona,
+    m.nombre AS municipio,
+    dp.nombre AS departamento
   FROM envios e
-  JOIN clientes c ON e.cliente_id = c.id
-  JOIN users u ON c.user_id = u.id
-  JOIN rutas r ON e.ruta_id = r.id
-  WHERE e.ruta_id IN ($placeholders) AND e.estado_envio = 'pendiente'
+  JOIN direcciones d ON e.direccion_destino_id = d.id
+  JOIN zona z ON d.zona_id = z.id
+  JOIN municipios m ON d.municipio_id = m.id
+  JOIN departamentos dp ON d.departamento_id = dp.id
+  WHERE e.ruta_id IN ($placeholders) AND e.estado_envio != 'recibido'
+  ORDER BY e.created_at DESC
 ");
 $stmt->execute($ruta_ids);
 $envios = $stmt->fetchAll();
@@ -105,11 +93,10 @@ $envios = $stmt->fetchAll();
     <table class="table table-bordered table-striped">
       <thead class="table-light">
         <tr>
-          <th>Ruta</th>
-          <th>Cliente</th>
-          <th>Tamaño</th>
-          <th>Peso</th>
-          <th>Descripción</th>
+          <th>No. Guía</th>
+          <th>Destinatario</th>
+          <th>Teléfono</th>
+          <th>Dirección</th>
           <th>Fecha</th>
           <th>Acción</th>
         </tr>
@@ -117,16 +104,17 @@ $envios = $stmt->fetchAll();
       <tbody>
         <?php foreach ($envios as $r): ?>
           <tr>
-            <td><?= htmlspecialchars($r['ruta_nombre']) ?></td>
-            <td><?= $r['cliente_nombre'] . ' ' . $r['cliente_apellido'] ?></td>
-            <td><?= $r['tamano'] ?></td>
-            <td><?= $r['peso'] ?> kg</td>
-            <td><?= $r['descripcion'] ?></td>
+            <td><?= $r['envio_id'] ?></td>
+            <td><?= htmlspecialchars($r['nombre_destinatario']) ?></td>
+            <td><?= htmlspecialchars($r['telefono_destinatario']) ?></td>
+            <td><?= htmlspecialchars($r['calle']) . ' #' . $r['numero_direccion'] . ', Zona ' . $r['zona'] . ', ' . $r['municipio'] . ', ' . $r['departamento'] ?></td>
             <td><?= date('d/m/Y H:i', strtotime($r['created_at'])) ?></td>
-            <td>
-              <form method="POST" onsubmit="return confirm('¿Confirmar entrega del paquete?');">
-                <input type="hidden" name="envio_id" value="<?= $r['id'] ?>">
-                <button type="submit" class="btn btn-success btn-sm">Entregado</button>
+            <td class="d-flex gap-2">
+              <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalFirma" data-envio-id="<?= $r['envio_id'] ?>">Entregado</button>
+              <form method="POST">
+                <input type="hidden" name="envio_id" value="<?= $r['envio_id'] ?>">
+                <input type="hidden" name="accion" value="cancelado">
+                <button type="submit" class="btn btn-danger btn-sm">Cancelar</button>
               </form>
             </td>
           </tr>
@@ -135,5 +123,63 @@ $envios = $stmt->fetchAll();
     </table>
   <?php endif; ?>
 </div>
+
+<!-- Modal Firma -->
+<div class="modal fade" id="modalFirma" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <form method="POST" id="formFirma">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Firma del destinatario</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <canvas id="signatureCanvas" style="width: 100%; height: 200px; border: 1px solid #ccc;"></canvas>
+          <input type="hidden" name="firma_base64" id="firma_base64">
+          <input type="hidden" name="envio_id" id="envio_id_firma">
+          <input type="hidden" name="accion" value="entregado">
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar Firma</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.6/dist/signature_pad.umd.min.js"></script>
+<script>
+  const canvas = document.getElementById("signatureCanvas");
+  const signaturePad = new SignaturePad(canvas);
+
+  function resizeCanvas() {
+    const ratio = Math.max(window.devicePixelRatio || 1, 1);
+    canvas.width = canvas.offsetWidth * ratio;
+    canvas.height = canvas.offsetHeight * ratio;
+    canvas.getContext("2d").scale(ratio, ratio);
+    signaturePad.clear();
+  }
+
+  window.addEventListener("resize", resizeCanvas);
+
+  const modal = document.getElementById("modalFirma");
+  modal.addEventListener("shown.bs.modal", function (event) {
+    const button = event.relatedTarget;
+    const envioId = button.getAttribute("data-envio-id");
+    document.getElementById("envio_id_firma").value = envioId;
+    resizeCanvas();
+  });
+
+  document.getElementById("formFirma").addEventListener("submit", function (e) {
+    if (signaturePad.isEmpty()) {
+      alert("Por favor, dibuja la firma antes de enviar.");
+      e.preventDefault();
+      return;
+    }
+    const dataUrl = signaturePad.toDataURL();
+    document.getElementById("firma_base64").value = dataUrl;
+  });
+</script>
 
 <?php include 'partials/footer.php'; ?>

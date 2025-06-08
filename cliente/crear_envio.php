@@ -11,7 +11,7 @@ if (!isset($_SESSION['user_id']) || $_SESSION['rol'] !== 'cliente') {
 $stmt = $pdo->prepare("SELECT id FROM clientes WHERE user_id = ?");
 $stmt->execute([$_SESSION['user_id']]);
 $cliente_id = $stmt->fetchColumn();
-echo "<pre>Cliente ID: $cliente_id</pre>"; // Debug
+//echo "<pre>Cliente ID: $cliente_id</pre>"; // Debug
 
 // Obtener direcciones
 $stmt = $pdo->prepare("SELECT d.*, z.numero AS zona, m.nombre AS municipio, dp.nombre AS departamento 

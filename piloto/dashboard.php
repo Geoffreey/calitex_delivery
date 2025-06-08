@@ -15,7 +15,7 @@ include 'partials/sidebar.php';
 // Consulta resumen
 $resumen = $pdo->prepare("
   SELECT estado_envio, COUNT(*) AS total
-  FROM paquetes
+  FROM envios
   WHERE piloto_id = ?
   GROUP BY estado_envio
 ");
