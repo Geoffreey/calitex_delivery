@@ -11,7 +11,6 @@ if (!isset($_SESSION['user_id']) || $_SESSION['rol'] !== 'cliente') {
 $stmt = $pdo->prepare("SELECT id FROM clientes WHERE user_id = ?");
 $stmt->execute([$_SESSION['user_id']]);
 $cliente_id = $stmt->fetchColumn();
-//echo "<pre>Cliente ID: $cliente_id</pre>"; // Debug
 
 // Obtener direcciones
 $stmt = $pdo->prepare("SELECT d.*, z.numero AS zona, m.nombre AS municipio, dp.nombre AS departamento 
@@ -23,8 +22,16 @@ $stmt = $pdo->prepare("SELECT d.*, z.numero AS zona, m.nombre AS municipio, dp.n
 $stmt->execute([$cliente_id]);
 $direcciones = $stmt->fetchAll();
 
+// Mapear direcciones por ID
+$direccion_map = [];
+foreach ($direcciones as $d) {
+  $direccion_map[$d['id']] = "{$d['calle']} #{$d['numero']}, Zona {$d['zona']}, {$d['municipio']}, {$d['departamento']}";
+}
+
 // Obtener paquetes disponibles
 $paquetes = $pdo->query("SELECT id, nombre, tamano, peso, tarifa FROM paquetes ORDER BY nombre")->fetchAll();
+
+$guia_script = "";
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $direccion_destino_id = $_POST['direccion_destino_id'];
@@ -32,20 +39,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $telefono_destinatario = $_POST['telefono_destinatario'];
   $descripcion = $_POST['descripcion'] ?? null;
   $paquete_ids = $_POST['paquete_ids'] ?? [];
+  $pago_envio = $_POST['pago_envio'] ?? 'cliente';
 
-  // Asignar la primera dirección del cliente como origen
   $direccion_origen_id = $direcciones[0]['id'] ?? null;
+  $direccion_texto = $direccion_map[$direccion_destino_id] ?? '';
 
   try {
     $pdo->beginTransaction();
 
-    // Insertar envío
-    $stmt = $pdo->prepare("INSERT INTO envios (cliente_id, direccion_origen_id, direccion_destino_id, nombre_destinatario, telefono_destinatario, descripcion) VALUES (?, ?, ?, ?, ?, ?)");
-    $stmt->execute([$cliente_id, $direccion_origen_id, $direccion_destino_id, $nombre_destinatario, $telefono_destinatario, $descripcion]);
+    $stmt = $pdo->prepare("INSERT INTO envios (cliente_id, direccion_origen_id, direccion_destino_id, nombre_destinatario, telefono_destinatario, descripcion, pago_envio) VALUES (?, ?, ?, ?, ?, ?, ?)");
+    $stmt->execute([$cliente_id, $direccion_origen_id, $direccion_destino_id, $nombre_destinatario, $telefono_destinatario, $descripcion, $pago_envio]);
 
     $envio_id = $pdo->lastInsertId();
 
-    // Asociar paquetes
     $stmt = $pdo->prepare("INSERT INTO envios_paquetes (envio_id, paquete_id) VALUES (?, ?)");
     foreach ($paquete_ids as $paquete_id => $cantidad) {
       for ($i = 0; $i < (int)$cantidad; $i++) {
@@ -54,8 +60,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     $pdo->commit();
-    header("Location: mis_envios.php");
-    exit;
+
+    $guia_script = "<script>
+      document.addEventListener('DOMContentLoaded', function() {
+        const modal = new bootstrap.Modal(document.getElementById('modalGuia'));
+        document.getElementById('modalGuiaId').textContent = '$envio_id';
+        document.getElementById('modalGuiaNombre').textContent = '$nombre_destinatario';
+        document.getElementById('modalGuiaTelefono').textContent = '$telefono_destinatario';
+        document.getElementById('modalGuiaDireccion').textContent = `{$direccion_texto}`;
+        document.getElementById('modalGuiaDescripcion').textContent = `$descripcion`;
+        setTimeout(() => { modal.show(); }, 300);
+      });
+    </script>";
+
   } catch (Exception $e) {
     $pdo->rollBack();
     echo "Error al crear envío: " . $e->getMessage();
@@ -64,6 +81,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 include 'partials/header.php';
 include 'partials/sidebar.php';
+echo $guia_script;
 ?>
 
 <div class="col-lg-10 col-12 p-4">
@@ -92,6 +110,13 @@ include 'partials/sidebar.php';
       <label class="form-label">Observaciones</label>
       <textarea name="descripcion" class="form-control" rows="2"></textarea>
     </div>
+    <div class="col-md-6">
+      <label class="form-label">¿Quién paga el envío?</label>
+      <select name="pago_envio" class="form-select" required>
+        <option value="cliente">Cobro a mi cuenta</option>
+        <option value="destinatario">Cobro contra entrega</option>
+      </select>
+    </div>
     <div class="col-12">
       <label class="form-label">Seleccionar paquetes y cantidad</label>
       <?php foreach ($paquetes as $p): ?>
@@ -117,11 +142,56 @@ include 'partials/sidebar.php';
   </form>
 </div>
 
-<script>
-  document.querySelectorAll('.cantidad-paquete').forEach(input => {
-    input.addEventListener('input', calcularTotal);
-  });
+<!-- Modal guía -->
+<div class="modal fade" id="modalGuia" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" id="contenido-guia">
+      <div class="modal-body">
+<pre style="font-family: monospace; white-space: pre-wrap;">
+----------------------------------------
+          📨 GUÍA DE ENTREGA - ENVÍO
+----------------------------------------
+No. de Guía: <span id="modalGuiaId"></span>
+Nombre: <span id="modalGuiaNombre"></span>
+Teléfono: <span id="modalGuiaTelefono"></span>
+Dirección: <span id="modalGuiaDireccion"></span>
+Descripción: <span id="modalGuiaDescripcion"></span>
 
+📦 ¡Gracias por usar nuestro servicio!
+----------------------------------------
+</pre>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="imprimirGuia()">Imprimir</button>
+        <a href="#" onclick="descargarPDF()" class="btn btn-success">Descargar PDF</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+@media print {
+  body * {
+    display: none;
+  }
+  #contenido-guia, #contenido-guia * {
+    display: block !important;
+    visibility: visible;
+  }
+  .modal {
+    position: static;
+    margin: 0;
+    padding: 0;
+  }
+  .modal-footer button,
+  .modal-footer a,
+  .btn-close {
+    display: none !important;
+  }
+}
+</style>
+
+<script>
   function calcularTotal() {
     let total = 0;
     document.querySelectorAll('.cantidad-paquete').forEach(input => {
@@ -130,6 +200,38 @@ include 'partials/sidebar.php';
       total += cantidad * tarifa;
     });
     document.getElementById('total-estimado').textContent = total.toFixed(2);
+  }
+
+  document.querySelectorAll('.cantidad-paquete').forEach(input => {
+    input.addEventListener('input', calcularTotal);
+  });
+
+  function descargarPDF() {
+    const id = document.getElementById('modalGuiaId').textContent;
+    if (id) {
+      window.open(`generar_pdf_envio.php?id=${id}`, '_blank');
+    }
+  }
+
+  function imprimirGuia() {
+    const guiaContent = document.getElementById('contenido-guia').cloneNode(true);
+    const footer = guiaContent.querySelector('.modal-footer');
+    if (footer) footer.remove();
+
+    const ventana = window.open('', '_blank');
+    ventana.document.write(`
+      <html>
+        <head>
+          <title>Guía de Envío</title>
+          <style>body { font-family: monospace; padding: 20px; }</style>
+        </head>
+        <body>${guiaContent.innerHTML}</body>
+      </html>
+    `);
+    ventana.document.close();
+    ventana.focus();
+    ventana.print();
+    ventana.close();
   }
 </script>
 
