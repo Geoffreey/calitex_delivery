@@ -42,7 +42,10 @@ $placeholders = implode(',', array_fill(0, count($ruta_ids), '?'));
 $stmt = $pdo->prepare("
   SELECT r.id AS recoleccion_id, r.created_at, r.ruta_recoleccion_id,
          u.nombre AS cliente_nombre, u.apellido AS cliente_apellido, u.telefono,
-         d.calle, d.numero, z.numero AS zona, m.nombre AS municipio, dept.nombre AS departamento
+         d.calle, d.numero, 
+         z.numero AS zona, 
+         m.nombre AS municipio, 
+         dept.nombre AS departamento
   FROM recolecciones r
   JOIN clientes c ON r.cliente_id = c.id
   JOIN users u ON c.user_id = u.id
