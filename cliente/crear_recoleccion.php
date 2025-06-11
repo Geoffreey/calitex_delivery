@@ -11,7 +11,6 @@ if (!isset($_SESSION['user_id']) || $_SESSION['rol'] !== 'cliente') {
 $stmt = $pdo->prepare("SELECT id FROM clientes WHERE user_id = ?");
 $stmt->execute([$_SESSION['user_id']]);
 $cliente_id = $stmt->fetchColumn();
-//echo "<pre>Cliente ID: $cliente_id</pre>"; // Debug
 
 // Obtener direcciones
 $stmt = $pdo->prepare("SELECT d.*, z.numero AS zona, m.nombre AS municipio, dp.nombre AS departamento 
@@ -23,8 +22,16 @@ $stmt = $pdo->prepare("SELECT d.*, z.numero AS zona, m.nombre AS municipio, dp.n
 $stmt->execute([$cliente_id]);
 $direcciones = $stmt->fetchAll();
 
+// Mapear direcciones por ID
+$direccion_map = [];
+foreach ($direcciones as $d) {
+  $direccion_map[$d['id']] = "{$d['calle']} #{$d['numero']}, Zona {$d['zona']}, {$d['municipio']}, {$d['departamento']}";
+}
+
 // Obtener paquetes disponibles
 $paquetes = $pdo->query("SELECT id, nombre, tamano, peso, tarifa FROM paquetes ORDER BY nombre")->fetchAll();
+
+$guia_script = "";
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $direccion_origen_id = $_POST['direccion_origen_id'];
@@ -34,16 +41,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $observaciones = $_POST['observaciones'] ?? null;
   $paquete_ids = $_POST['paquete_ids'] ?? [];
 
+  $direccion_origen_texto = $direccion_map[$direccion_origen_id] ?? '';
+  $direccion_destino_texto = $direccion_map[$direccion_destino_id] ?? '';
+
   try {
     $pdo->beginTransaction();
 
-    // Insertar recolección
     $stmt = $pdo->prepare("INSERT INTO recolecciones (cliente_id, direccion_origen_id, direccion_destino_id, nombre_destinatario, telefono_destinatario, descripcion) VALUES (?, ?, ?, ?, ?, ?)");
     $stmt->execute([$cliente_id, $direccion_origen_id, $direccion_destino_id, $nombre_destinatario, $telefono_destinatario, $observaciones]);
 
     $recoleccion_id = $pdo->lastInsertId();
 
-    // Asociar paquetes
     $stmt = $pdo->prepare("INSERT INTO recolecciones_paquetes (recoleccion_id, paquete_id) VALUES (?, ?)");
     foreach ($paquete_ids as $paquete_id => $cantidad) {
       for ($i = 0; $i < (int)$cantidad; $i++) {
@@ -52,8 +60,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     $pdo->commit();
-    header("Location: mis_recolecciones.php");
-    exit;
+
+    $guia_script = "<script>
+      document.addEventListener('DOMContentLoaded', function() {
+        const modal = new bootstrap.Modal(document.getElementById('modalGuia'));
+        document.getElementById('modalGuiaId').textContent = '$recoleccion_id';
+        document.getElementById('modalGuiaNombre').textContent = '$nombre_destinatario';
+        document.getElementById('modalGuiaTelefono').textContent = '$telefono_destinatario';
+        document.getElementById('modalGuiaOrigen').textContent = `{$direccion_origen_texto}`;
+        document.getElementById('modalGuiaDireccion').textContent = `{$direccion_destino_texto}`;
+        document.getElementById('modalGuiaDescripcion').textContent = `$observaciones`;
+        modal.show();
+      });
+    </script>";
+
   } catch (Exception $e) {
     $pdo->rollBack();
     echo "Error al crear recolección: " . $e->getMessage();
@@ -62,6 +82,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 include 'partials/header.php';
 include 'partials/sidebar.php';
+echo $guia_script;
 ?>
 
 <div class="col-lg-10 col-12 p-4">
@@ -126,6 +147,52 @@ include 'partials/sidebar.php';
   </form>
 </div>
 
+<!-- Modal guía -->
+<div class="modal fade" id="modalGuia" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-body">
+        <pre style="font-family: monospace; white-space: pre-wrap; margin: 0;">
+----------------------------------------
+        📦 GUÍA DE RECOLECCIÓN
+----------------------------------------
+No. de Recolección: <span id="modalGuiaId"></span>
+Nombre: <span id="modalGuiaNombre"></span>
+Teléfono: <span id="modalGuiaTelefono"></span>
+Dirección de Recolección: <span id="modalGuiaOrigen"></span>
+Dirección de Entrega: <span id="modalGuiaDireccion"></span>
+Descripción: <span id="modalGuiaDescripcion"></span>
+
+✅ ¡Gracias por solicitar tu recolección!
+----------------------------------------
+        </pre>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary no-print" onclick="window.print()">Imprimir</button>
+        <a href="#" onclick="descargarPDF()" class="btn btn-success no-print">Descargar PDF</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style media="print">
+  body * {
+    visibility: hidden;
+  }
+  .modal.show, .modal.show * {
+    visibility: visible;
+  }
+  .modal {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+  }
+  .modal-footer, .no-print {
+    display: none !important;
+  }
+</style>
+
 <script>
   document.querySelectorAll('.cantidad-paquete').forEach(input => {
     input.addEventListener('input', calcularTotal);
@@ -139,6 +206,13 @@ include 'partials/sidebar.php';
       total += cantidad * tarifa;
     });
     document.getElementById('total-estimado').textContent = total.toFixed(2);
+  }
+
+  function descargarPDF() {
+    const id = document.getElementById('modalGuiaId').textContent;
+    if (id) {
+      window.open(`generar_pdf_recoleccion.php?id=${id}`, '_blank');
+    }
   }
 </script>
 
