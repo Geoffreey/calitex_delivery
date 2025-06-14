@@ -189,19 +189,19 @@ echo $guia_script;
   ----------------------------------------<br>
   No. de Recolección: <span id="modalGuiaId"></span><br><br>
 
-  🟢 ORIGEN (Remitente):<br>
+  ORIGEN (Remitente):<br>
   Nombre: <span id="modalGuiaNombreRemitente"></span><br>
   Teléfono: <span id="modalGuiaTelefonoRemitente"></span><br>
   Dirección de Recolección: <span id="modalGuiaOrigen"></span><br><br>
 
-  🔵 DESTINO (Destinatario):<br>
+  DESTINO (Destinatario):<br>
   Nombre: <span id="modalGuiaNombre"></span><br>
   Teléfono: <span id="modalGuiaTelefono"></span><br>
   Dirección de Entrega: <span id="modalGuiaDireccion"></span><br><br>
 
   Descripción: <span id="modalGuiaDescripcion"></span><br><br>
 
-  ✅ ¡Gracias por solicitar tu recolección!<br>
+  ¡Gracias por solicitar tu recolección!<br>
   ----------------------------------------
 </div>
 
