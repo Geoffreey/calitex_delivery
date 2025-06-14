@@ -8,9 +8,16 @@ if (!isset($_SESSION['user_id']) || $_SESSION['rol'] !== 'cliente') {
 }
 
 // Obtener ID del cliente
-$stmt = $pdo->prepare("SELECT id FROM clientes WHERE user_id = ?");
+$stmt = $pdo->prepare("SELECT c.id, u.nombre, u.telefono 
+                       FROM clientes c 
+                       JOIN users u ON c.user_id = u.id 
+                       WHERE c.user_id = ?");
 $stmt->execute([$_SESSION['user_id']]);
-$cliente_id = $stmt->fetchColumn();
+$cliente_data = $stmt->fetch(PDO::FETCH_ASSOC);
+
+$cliente_id = $cliente_data['id'];
+$cliente_nombre = $cliente_data['nombre'];
+$cliente_telefono = $cliente_data['telefono'];
 
 // Obtener direcciones
 $stmt = $pdo->prepare("SELECT d.*, z.numero AS zona, m.nombre AS municipio, dp.nombre AS departamento 
@@ -41,6 +48,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $observaciones = $_POST['observaciones'] ?? null;
   $paquete_ids = $_POST['paquete_ids'] ?? [];
 
+  // Validar que al menos un paquete tenga cantidad > 0
+  if (empty($paquete_ids)) {
+    echo "<script>alert('Debes seleccionar al menos un paquete.'); window.location.href=window.location.href;</script>";
+    exit;
+  }
+
+  // Validar datos obligatorios
+  if (empty($direccion_origen_id) || empty($direccion_destino_id) || empty($nombre_destinatario) || empty($telefono_destinatario)) {
+    echo "<script>alert('Todos los campos obligatorios deben ser completados.'); window.location.href=window.location.href;</script>";
+    exit;
+  }
+
+  // Validar que al menos un paquete tenga cantidad > 0
+  $paquetes_validos = array_filter($paquete_ids, function($c) {
+    return (int)$c > 0;
+  });
+  if (empty($paquetes_validos)) {
+    echo "<script>alert('Debes seleccionar al menos un paquete con cantidad mayor a 0.'); window.location.href=window.location.href;</script>";
+    exit;
+  }
+
   $direccion_origen_texto = $direccion_map[$direccion_origen_id] ?? '';
   $direccion_destino_texto = $direccion_map[$direccion_destino_id] ?? '';
 
@@ -62,17 +90,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $pdo->commit();
 
     $guia_script = "<script>
-      document.addEventListener('DOMContentLoaded', function() {
-        const modal = new bootstrap.Modal(document.getElementById('modalGuia'));
-        document.getElementById('modalGuiaId').textContent = '$recoleccion_id';
-        document.getElementById('modalGuiaNombre').textContent = '$nombre_destinatario';
-        document.getElementById('modalGuiaTelefono').textContent = '$telefono_destinatario';
-        document.getElementById('modalGuiaOrigen').textContent = `{$direccion_origen_texto}`;
-        document.getElementById('modalGuiaDireccion').textContent = `{$direccion_destino_texto}`;
-        document.getElementById('modalGuiaDescripcion').textContent = `$observaciones`;
-        modal.show();
-      });
-    </script>";
+  document.addEventListener('DOMContentLoaded', function() {
+    const modal = new bootstrap.Modal(document.getElementById('modalGuia'));
+    document.getElementById('modalGuiaId').textContent = '$recoleccion_id';
+    document.getElementById('modalGuiaNombreRemitente').textContent = '$cliente_nombre';
+    document.getElementById('modalGuiaTelefonoRemitente').textContent = '$cliente_telefono';
+    document.getElementById('modalGuiaOrigen').textContent = `{$direccion_origen_texto}`;
+    document.getElementById('modalGuiaNombre').textContent = '$nombre_destinatario';
+    document.getElementById('modalGuiaTelefono').textContent = '$telefono_destinatario';
+    document.getElementById('modalGuiaDireccion').textContent = `{$direccion_destino_texto}`;
+    document.getElementById('modalGuiaDescripcion').textContent = `$observaciones`;
+    modal.show();
+  });
+</script>";
+
 
   } catch (Exception $e) {
     $pdo->rollBack();
@@ -152,20 +183,29 @@ echo $guia_script;
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
       <div class="modal-body">
-        <pre style="font-family: monospace; white-space: pre-wrap; margin: 0;">
-----------------------------------------
-        📦 GUÍA DE RECOLECCIÓN
-----------------------------------------
-No. de Recolección: <span id="modalGuiaId"></span>
-Nombre: <span id="modalGuiaNombre"></span>
-Teléfono: <span id="modalGuiaTelefono"></span>
-Dirección de Recolección: <span id="modalGuiaOrigen"></span>
-Dirección de Entrega: <span id="modalGuiaDireccion"></span>
-Descripción: <span id="modalGuiaDescripcion"></span>
+        <div id="contenidoGuia" style="font-family: monospace; font-size: 12px; line-height: 1.2;">
+  ----------------------------------------<br>
+          📦 GUÍA DE RECOLECCIÓN<br>
+  ----------------------------------------<br>
+  No. de Recolección: <span id="modalGuiaId"></span><br><br>
 
-✅ ¡Gracias por solicitar tu recolección!
-----------------------------------------
-        </pre>
+  🟢 ORIGEN (Remitente):<br>
+  Nombre: <span id="modalGuiaNombreRemitente"></span><br>
+  Teléfono: <span id="modalGuiaTelefonoRemitente"></span><br>
+  Dirección de Recolección: <span id="modalGuiaOrigen"></span><br><br>
+
+  🔵 DESTINO (Destinatario):<br>
+  Nombre: <span id="modalGuiaNombre"></span><br>
+  Teléfono: <span id="modalGuiaTelefono"></span><br>
+  Dirección de Entrega: <span id="modalGuiaDireccion"></span><br><br>
+
+  Descripción: <span id="modalGuiaDescripcion"></span><br><br>
+
+  ✅ ¡Gracias por solicitar tu recolección!<br>
+  ----------------------------------------
+</div>
+
+
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary no-print" onclick="window.print()">Imprimir</button>
@@ -176,22 +216,46 @@ Descripción: <span id="modalGuiaDescripcion"></span>
 </div>
 
 <style media="print">
+  @page {
+    margin: 10mm;
+    size: A4 portrait;
+  }
+
   body * {
     visibility: hidden;
   }
-  .modal.show, .modal.show * {
+
+  .modal.show,
+  .modal.show * {
     visibility: visible;
   }
+
   .modal {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
+    padding: 0;
+    margin: 0;
   }
-  .modal-footer, .no-print {
+
+  .modal-body {
+    padding: 10px;
+  }
+
+  #contenidoGuia {
+    font-size: 12px;
+    line-height: 1.2;
+    max-height: 260mm; /* Asegura que no se pase de una hoja */
+    overflow: hidden;
+  }
+
+  .modal-footer,
+  .no-print {
     display: none !important;
   }
 </style>
+
 
 <script>
   document.querySelectorAll('.cantidad-paquete').forEach(input => {
