@@ -60,7 +60,7 @@
     </a>
     <div class="collapse ps-3" id="submenuReportes">
       <a href="historial_asignaciones.php" class="list-group-item list-group-item-action">Ruta para envios</a>
-      <a href="asignar_ruta_recolecciones.php" class="list-group-item list-group-item-action">Ruta para recolecciones</a>
+      <a href="historial_asignaciones_recoleccion.php" class="list-group-item list-group-item-action">Ruta para recolecciones</a>
     </div>
     <!--<a href="flotas.php" class="list-group-item list-group-item-action">Flotas</a>
     <a href="rutas.php" class="list-group-item list-group-item-action">Rutas</a>

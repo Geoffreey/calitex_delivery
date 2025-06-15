@@ -52,26 +52,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $envio_id = $pdo->lastInsertId();
 
-    $stmt = $pdo->prepare("INSERT INTO envios_paquetes (envio_id, paquete_id) VALUES (?, ?)");
-    foreach ($paquete_ids as $paquete_id => $cantidad) {
-      for ($i = 0; $i < (int)$cantidad; $i++) {
-        $stmt->execute([$envio_id, $paquete_id]);
-      }
-    }
+   $monto_cobros = $_POST['monto_cobros'] ?? [];
+$stmt = $pdo->prepare("INSERT INTO envios_paquetes (envio_id, paquete_id, monto_cobro) VALUES (?, ?, ?)");
+$total_cobro = 0;
+
+// Guardar monto_cobro y calcular total parcial (solo los montos definidos por el cliente)
+foreach ($paquete_ids as $paquete_id => $cantidad) {
+  $monto = isset($monto_cobros[$paquete_id]) ? floatval($monto_cobros[$paquete_id]) : 0.00;
+  for ($i = 0; $i < (int)$cantidad; $i++) {
+    $stmt->execute([$envio_id, $paquete_id, $monto]);
+  }
+  $total_cobro += ((int)$cantidad) * $monto;
+}
+
+// Sumar tarifas base solo si el envío es cobro contra entrega
+$tarifa_envio_total = 0;
+foreach ($paquetes as $p) {
+  $id_paquete = $p['id'];
+  $cantidad = isset($paquete_ids[$id_paquete]) ? (int)$paquete_ids[$id_paquete] : 0;
+  $tarifa_envio_total += $cantidad * floatval($p['tarifa']);
+}
+
+if ($pago_envio === 'destinatario') {
+  $total_cobro += $tarifa_envio_total;
+}
 
     $pdo->commit();
 
     $guia_script = "<script>
-      document.addEventListener('DOMContentLoaded', function() {
-        const modal = new bootstrap.Modal(document.getElementById('modalGuia'));
-        document.getElementById('modalGuiaId').textContent = '$envio_id';
-        document.getElementById('modalGuiaNombre').textContent = '$nombre_destinatario';
-        document.getElementById('modalGuiaTelefono').textContent = '$telefono_destinatario';
-        document.getElementById('modalGuiaDireccion').textContent = `{$direccion_texto}`;
-        document.getElementById('modalGuiaDescripcion').textContent = `$descripcion`;
-        setTimeout(() => { modal.show(); }, 300);
-      });
-    </script>";
+  document.addEventListener('DOMContentLoaded', function() {
+    const modal = new bootstrap.Modal(document.getElementById('modalGuia'));
+    document.getElementById('modalGuiaId').textContent = '$envio_id';
+    document.getElementById('modalGuiaNombre').textContent = '$nombre_destinatario';
+    document.getElementById('modalGuiaTelefono').textContent = '$telefono_destinatario';
+    document.getElementById('modalGuiaDireccion').textContent = `{$direccion_texto}`;
+    document.getElementById('modalGuiaDescripcion').textContent = `$descripcion`;
+    document.getElementById('modalGuiaPagoEnvio').textContent = '" . ($pago_envio === 'destinatario' ? 'Cobro contra entrega' : 'Cobro a mi cuenta') . "';
+    document.getElementById('modalGuiaCobro').textContent = 'Q" . number_format($total_cobro, 2) . "';
+    setTimeout(() => { modal.show(); }, 300);
+  });
+</script>";
+
+
 
   } catch (Exception $e) {
     $pdo->rollBack();
@@ -125,7 +147,15 @@ echo $guia_script;
             <strong><?= htmlspecialchars("{$p['nombre']} - {$p['tamano']} ({$p['peso']} kg) - Q{$p['tarifa']}") ?></strong>
           </div>
           <div class="col-md-4">
-            <input type="number" min="0" name="paquete_ids[<?= $p['id'] ?>]" class="form-control cantidad-paquete" data-tarifa="<?= $p['tarifa'] ?>" placeholder="Cantidad">
+            <div class="row">
+              <div class="col-6">
+                <input type="number" min="0" name="paquete_ids[<?= $p['id'] ?>]" class="form-control cantidad-paquete" data-tarifa="<?= $p['tarifa'] ?>" placeholder="Cantidad">
+              </div>
+              <div class="col-6">
+                <input type="number" min="0" step="0.01" name="monto_cobros[<?= $p['id'] ?>]" class="form-control" placeholder="Cobro (Q)">
+              </div>
+            </div>
+
           </div>
         </div>
       <?php endforeach; ?>
@@ -145,7 +175,7 @@ echo $guia_script;
 <!-- Modal guía -->
 <div class="modal fade" id="modalGuia" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content" id="contenido-guia">
+    <div class="modal-content" id="contenidoGuia">
       <div class="modal-body">
 <pre style="font-family: monospace; white-space: pre-wrap;">
 ----------------------------------------
@@ -156,6 +186,8 @@ Nombre: <span id="modalGuiaNombre"></span>
 Teléfono: <span id="modalGuiaTelefono"></span>
 Dirección: <span id="modalGuiaDireccion"></span>
 Descripción: <span id="modalGuiaDescripcion"></span>
+Forma de pago del envío: <span id="modalGuiaPagoEnvio"></span>
+Cobro total al cliente: <span id="modalGuiaCobro"></span><br>
 
 📦 ¡Gracias por usar nuestro servicio!
 ----------------------------------------
@@ -169,26 +201,65 @@ Descripción: <span id="modalGuiaDescripcion"></span>
   </div>
 </div>
 
-<style>
-@media print {
-  body * {
-    display: none;
+<style media="print">
+  @page {
+    size: A4 portrait;
+    margin: 0;
   }
-  #contenido-guia, #contenido-guia * {
-    display: block !important;
+
+  html, body {
+    height: 100%;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  .modal.show,
+  .modal.show * {
     visibility: visible;
   }
+
   .modal {
-    position: static;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
     margin: 0;
     padding: 0;
+    height: 100%;
+    overflow: hidden;
+    background: white;
   }
-  .modal-footer button,
-  .modal-footer a,
-  .btn-close {
+
+  .modal-content {
+    border: none !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+  }
+
+  .modal-body {
+    padding: 20px !important;
+    max-height: 100%;
+    overflow: hidden !important;
+  }
+
+  #contenidoGuia {
+    font-family: monospace;
+    font-size: 11px;
+    line-height: 1.4;
+    page-break-inside: avoid;
+    max-height: 270mm;
+    overflow: hidden;
+  }
+
+  .modal-footer,
+  .no-print {
     display: none !important;
   }
-}
 </style>
 
 <script>
@@ -214,25 +285,27 @@ Descripción: <span id="modalGuiaDescripcion"></span>
   }
 
   function imprimirGuia() {
-    const guiaContent = document.getElementById('contenido-guia').cloneNode(true);
-    const footer = guiaContent.querySelector('.modal-footer');
-    if (footer) footer.remove();
+  const guiaContent = document.getElementById('contenidoGuia').cloneNode(true);
+  const footer = guiaContent.querySelector('.modal-footer');
+  if (footer) footer.remove();
 
-    const ventana = window.open('', '_blank');
-    ventana.document.write(`
-      <html>
-        <head>
-          <title>Guía de Envío</title>
-          <style>body { font-family: monospace; padding: 20px; }</style>
-        </head>
-        <body>${guiaContent.innerHTML}</body>
-      </html>
-    `);
-    ventana.document.close();
-    ventana.focus();
-    ventana.print();
-    ventana.close();
-  }
+  const ventana = window.open('', '_blank');
+  ventana.document.write(`
+    <html>
+      <head>
+        <title>Guía de Envío</title>
+        <style>
+          body { font-family: monospace; padding: 20px; margin: 0; }
+        </style>
+      </head>
+      <body>${guiaContent.innerHTML}</body>
+    </html>
+  `);
+  ventana.document.close();
+  ventana.focus();
+  ventana.print();
+  ventana.close();
+}
 </script>
 
 <?php include 'partials/footer.php'; ?>
