@@ -52,10 +52,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
       $stmt = $pdo->prepare("UPDATE envios SET estado_envio = 'recibido', firma = ? WHERE id = ? AND ruta_id IN ($placeholders)");
       $stmt->execute(array_merge([$firma_path, $envio_id], $ruta_ids));
-    } elseif ($accion === 'cancelado') {
-      $stmt = $pdo->prepare("UPDATE envios SET estado_envio = 'cancelado' WHERE id = ? AND ruta_id IN ($placeholders)");
-      $stmt->execute(array_merge([$envio_id], $ruta_ids));
+    } elseif ($accion === 'cancelado' && !empty($_POST['observacion_cancelacion'])) {
+      $observacion = trim($_POST['observacion_cancelacion']);
+      $stmt = $pdo->prepare("UPDATE envios SET estado_envio = 'cancelado', observacion_cancelacion = ? WHERE id = ? AND ruta_id IN ($placeholders)");
+      $stmt->execute(array_merge([$observacion, $envio_id], $ruta_ids));
     }
+
 
     header("Location: ruta_asignada_envios.php");
     exit;
@@ -77,7 +79,7 @@ $stmt = $pdo->prepare("
   JOIN zona z ON d.zona_id = z.id
   JOIN municipios m ON d.municipio_id = m.id
   JOIN departamentos dp ON d.departamento_id = dp.id
-  WHERE e.ruta_id IN ($placeholders) AND e.estado_envio != 'recibido'
+  WHERE e.ruta_id IN ($placeholders) AND e.estado_envio NOT IN ('recibido', 'cancelado')
   ORDER BY e.created_at DESC
 ");
 $stmt->execute($ruta_ids);
@@ -111,11 +113,12 @@ $envios = $stmt->fetchAll();
             <td><?= date('d/m/Y H:i', strtotime($r['created_at'])) ?></td>
             <td class="d-flex gap-2">
               <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalFirma" data-envio-id="<?= $r['envio_id'] ?>">Entregado</button>
-              <form method="POST">
-                <input type="hidden" name="envio_id" value="<?= $r['envio_id'] ?>">
-                <input type="hidden" name="accion" value="cancelado">
-                <button type="submit" class="btn btn-danger btn-sm">Cancelar</button>
-              </form>
+              <button 
+                class="btn btn-danger btn-sm" 
+                data-bs-toggle="modal" 
+                data-bs-target="#modalCancelar" 
+                data-envio-id="<?= $r['envio_id'] ?>">Cancelar
+              </button>
             </td>
           </tr>
         <?php endforeach; ?>
@@ -147,6 +150,33 @@ $envios = $stmt->fetchAll();
     </form>
   </div>
 </div>
+
+<!-- Modal Cancelación -->
+<div class="modal fade" id="modalCancelar" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <form method="POST" id="formCancelar">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Cancelar envío</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Motivo de cancelación</label>
+            <textarea name="observacion_cancelacion" class="form-control" required></textarea>
+          </div>
+          <input type="hidden" name="envio_id" id="envio_id_cancelar">
+          <input type="hidden" name="accion" value="cancelado">
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+          <button type="submit" class="btn btn-danger">Confirmar Cancelación</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
 
 <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.6/dist/signature_pad.umd.min.js"></script>
 <script>
@@ -180,6 +210,15 @@ $envios = $stmt->fetchAll();
     const dataUrl = signaturePad.toDataURL();
     document.getElementById("firma_base64").value = dataUrl;
   });
+
+  //scrip cancelar
+  const modalCancelar = document.getElementById("modalCancelar");
+  modalCancelar.addEventListener("shown.bs.modal", function (event) {
+  const button = event.relatedTarget;
+  const envioId = button.getAttribute("data-envio-id");
+  document.getElementById("envio_id_cancelar").value = envioId;
+});
+
 </script>
 
 <?php include 'partials/footer.php'; ?>
