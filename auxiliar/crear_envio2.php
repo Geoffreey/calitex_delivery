@@ -8,8 +8,15 @@ if (!isset($_SESSION['user_id']) || $_SESSION['rol'] !== 'auxiliar') {
 }
 
 // Obtener lista de clientes
-$clientes = $pdo->query("SELECT id, nombre FROM users WHERE rol = 'cliente' ORDER BY nombre")->fetchAll();
-$cliente_id = $_POST['cliente_id'] ?? null;
+$clientes = $pdo->query("
+  SELECT c.id AS cliente_id, u.nombre 
+  FROM clientes c
+  JOIN users u ON u.id = c.user_id
+  ORDER BY u.nombre
+")->fetchAll();
+$cliente_id = $_GET['cliente_id'] ?? ($_POST['cliente_id'] ?? null);
+//var_dump("cliente_id:", $cliente_id);
+
 
 // Obtener direcciones del cliente seleccionado
 $direcciones = [];
@@ -79,19 +86,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $cliente_id) {
 
     $pdo->commit();
 
-    $guia_script = "<script>
-  document.addEventListener('DOMContentLoaded', function() {
+    $pago_envio_texto = ($pago_envio === 'destinatario') ? 'Cobro contra entrega' : 'Cobro a mi cuenta';
+
+    $guia_script = <<<HTML
+<script>
+  window.addEventListener('DOMContentLoaded', function() {
     const modal = new bootstrap.Modal(document.getElementById('modalGuia'));
-    document.getElementById('modalGuiaId').textContent = '$envio_id';
-    document.getElementById('modalGuiaNombre').textContent = '$nombre_destinatario';
-    document.getElementById('modalGuiaTelefono').textContent = '$telefono_destinatario';
+    document.getElementById('modalGuiaId').textContent = '{$envio_id}';
+    document.getElementById('modalGuiaNombre').textContent = '{$nombre_destinatario}';
+    document.getElementById('modalGuiaTelefono').textContent = '{$telefono_destinatario}';
     document.getElementById('modalGuiaDireccion').textContent = `{$direccion_texto}`;
-    document.getElementById('modalGuiaDescripcion').textContent = `$descripcion`;
-    document.getElementById('modalGuiaPagoEnvio').textContent = '" . ($pago_envio === 'destinatario' ? 'Cobro contra entrega' : 'Cobro a mi cuenta') . "';
-    document.getElementById('modalGuiaCobro').textContent = 'Q" . number_format($total_cobro, 2) . "';
-    setTimeout(() => { modal.show(); }, 300);
+    document.getElementById('modalGuiaDescripcion').textContent = `{$descripcion}`;
+    document.getElementById('modalGuiaPagoEnvio').textContent = '{$pago_envio_texto}';
+    document.getElementById('modalGuiaCobro').textContent = 'Q' + parseFloat('{$total_cobro}').toFixed(2);
+    modal.show();
   });
-</script>";
+</script>
+HTML;
+
+    echo $guia_script;
 
   } catch (Exception $e) {
     $pdo->rollBack();
@@ -101,24 +114,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $cliente_id) {
 
 include 'partials/header.php';
 include 'partials/sidebar.php';
-echo $guia_script;
+
+// Mostrar alerta si el cliente no tiene direcciones
+if ($cliente_id && empty($direcciones)) {
+  echo "<div class='alert alert-warning'>Este cliente no tiene direcciones registradas aún. Por favor agregue al menos una dirección para continuar con la creación del envío.</div>";
+}
 ?>
 
 <div class="col-lg-10 col-12 p-4">
   <h2>Crear Envío</h2>
-  <form method="POST" class="row g-3" id="form-envio">
-    <div class="col-md-12">
-      <label class="form-label">Seleccionar Cliente</label>
-      <select name="cliente_id" class="form-select" required onchange="document.getElementById('form-envio').submit();">
-        <option value="">Seleccione un cliente</option>
-        <?php foreach ($clientes as $cli): ?>
-        <option value="<?= $cli['id'] ?>" <?= $cliente_id == $cli['id'] ? 'selected' : '' ?>>
-          <?= htmlspecialchars($cli['nombre']) ?>
-        </option>
-        <?php endforeach; ?>
-      </select>
-    </div>
-    <div class="col-md-12">
+  <form method="GET" class="mb-4">
+        <label class="form-label">Seleccionar Cliente</label>
+        <select name="cliente_id" class="form-select" onchange="this.form.submit()" required>
+            <option value="">Seleccione un cliente</option>
+            <?php foreach ($clientes as $cli): ?>
+            <option value="<?= $cli['cliente_id'] ?>" <?= $cliente_id == $cli['cliente_id'] ? 'selected' : '' ?>>
+                <?= htmlspecialchars($cli['nombre']) ?>
+            </option>
+            <?php endforeach; ?>
+        </select>
+    </form>
+    <?php if ($cliente_id): ?>
+    <form method="POST" class="row g-3" id="form-envio">
+        <input type="hidden" name="cliente_id" value="<?= $cliente_id ?>">
+        <div class="col-md-12">
       <label class="form-label">Dirección de Entrega</label>
       <select name="direccion_destino_id" class="form-select" required>
         <option value="">Seleccione</option>
@@ -178,7 +197,11 @@ echo $guia_script;
       <button type="submit" class="btn btn-success">Crear envío</button>
       <a href="dashboard.php" class="btn btn-secondary">Cancelar</a>
     </div>
-  </form>
+    </form>
+<?php else: ?>
+<div class="alert alert-warning">Por favor, seleccione un cliente para comenzar a crear un envío.</div>
+<?php endif; ?>
+
 </div>
 
 <!-- Modal guía -->
