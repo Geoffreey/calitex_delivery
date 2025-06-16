@@ -6,7 +6,7 @@
   </div>
   <div class="offcanvas-body list-group list-group-flush">
     <a href="dashboard.php" class="list-group-item list-group-item-action">Inicio</a>
-    <a href="crear_envio.php" class="list-group-item list-group-item-action">Crear envio</a>
+    <a href="crear_envio2.php" class="list-group-item list-group-item-action">Crear envio</a>
     <a href="crear_recoleccion.php" class="list-group-item list-group-item-action">Crear recoleccion</a>
 
     <!-- RUTAS - menú colapsable -->

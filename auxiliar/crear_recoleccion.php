@@ -7,40 +7,37 @@ if (!isset($_SESSION['user_id']) || $_SESSION['rol'] !== 'auxiliar') {
   exit;
 }
 
-// Obtener ID del cliente
-$stmt = $pdo->prepare("SELECT c.id, u.nombre, u.telefono 
-                       FROM clientes c 
-                       JOIN users u ON c.user_id = u.id 
-                       WHERE c.user_id = ?");
-$stmt->execute([$_SESSION['user_id']]);
-$cliente_data = $stmt->fetch(PDO::FETCH_ASSOC);
+$cliente_id = $_GET['cliente_id'] ?? ($_POST['cliente_id'] ?? null);
+$auxiliar_id = $_SESSION['user_id'];
 
-$cliente_id = $cliente_data['id'];
-$cliente_nombre = $cliente_data['nombre'];
-$cliente_telefono = $cliente_data['telefono'];
+// Obtener lista de clientes
+$clientes = $pdo->query("SELECT c.id AS cliente_id, u.nombre FROM clientes c JOIN users u ON u.id = c.user_id ORDER BY u.nombre")->fetchAll();
 
-// Obtener direcciones
-$stmt = $pdo->prepare("SELECT d.*, z.numero AS zona, m.nombre AS municipio, dp.nombre AS departamento 
-                      FROM direcciones d 
-                      JOIN zona z ON d.zona_id = z.id 
-                      JOIN municipios m ON d.municipio_id = m.id 
-                      JOIN departamentos dp ON d.departamento_id = dp.id 
-                      WHERE d.cliente_id = ?");
-$stmt->execute([$cliente_id]);
-$direcciones = $stmt->fetchAll();
-
-// Mapear direcciones por ID
+$cliente_nombre = '';
+$cliente_telefono = '';
+$direcciones = [];
 $direccion_map = [];
-foreach ($direcciones as $d) {
-  $direccion_map[$d['id']] = "{$d['calle']} #{$d['numero']}, Zona {$d['zona']}, {$d['municipio']}, {$d['departamento']}";
+
+if ($cliente_id) {
+  $stmt = $pdo->prepare("SELECT u.nombre, u.telefono FROM clientes c JOIN users u ON c.user_id = u.id WHERE c.id = ?");
+  $stmt->execute([$cliente_id]);
+  $info = $stmt->fetch(PDO::FETCH_ASSOC);
+  $cliente_nombre = $info['nombre'] ?? '';
+  $cliente_telefono = $info['telefono'] ?? '';
+
+  $stmt = $pdo->prepare("SELECT d.*, z.numero AS zona, m.nombre AS municipio, dp.nombre AS departamento FROM direcciones d JOIN zona z ON d.zona_id = z.id JOIN municipios m ON d.municipio_id = m.id JOIN departamentos dp ON d.departamento_id = dp.id WHERE d.cliente_id = ?");
+  $stmt->execute([$cliente_id]);
+  $direcciones = $stmt->fetchAll();
+
+  foreach ($direcciones as $d) {
+    $direccion_map[$d['id']] = "{$d['calle']} #{$d['numero']}, Zona {$d['zona']}, {$d['municipio']}, {$d['departamento']}";
+  }
 }
 
-// Obtener paquetes disponibles
 $paquetes = $pdo->query("SELECT id, nombre, tamano, peso, tarifa FROM paquetes ORDER BY nombre")->fetchAll();
-
 $guia_script = "";
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && $cliente_id) {
   $direccion_origen_id = $_POST['direccion_origen_id'];
   $direccion_destino_id = $_POST['direccion_destino_id'];
   $nombre_destinatario  = $_POST['nombre_destinatario'];
@@ -50,20 +47,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $pago_envio = $_POST['pago_envio'] ?? 'cliente';
   $monto_cobros = $_POST['monto_cobros'] ?? [];
 
-
-  // Validar que al menos un paquete tenga cantidad > 0
-  if (empty($paquete_ids)) {
-    echo "<script>alert('Debes seleccionar al menos un paquete.'); window.location.href=window.location.href;</script>";
-    exit;
-  }
-
-  // Validar datos obligatorios
-  if (empty($direccion_origen_id) || empty($direccion_destino_id) || empty($nombre_destinatario) || empty($telefono_destinatario)) {
-    echo "<script>alert('Todos los campos obligatorios deben ser completados.'); window.location.href=window.location.href;</script>";
-    exit;
-  }
-
-  // Validar que al menos un paquete tenga cantidad > 0
   $paquetes_validos = array_filter($paquete_ids, function($c) {
     return (int)$c > 0;
   });
@@ -78,57 +61,51 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   try {
     $pdo->beginTransaction();
 
-    $stmt = $pdo->prepare("INSERT INTO recolecciones (cliente_id, direccion_origen_id, direccion_destino_id, nombre_destinatario, telefono_destinatario, descripcion, pago_envio) VALUES (?, ?, ?, ?, ?, ?, ?)");
-    $stmt->execute([$cliente_id, $direccion_origen_id, $direccion_destino_id, $nombre_destinatario, $telefono_destinatario, $observaciones, $pago_envio]);
-
-
+    $stmt = $pdo->prepare("INSERT INTO recolecciones (cliente_id, auxiliar_id, direccion_origen_id, direccion_destino_id, nombre_destinatario, telefono_destinatario, descripcion, pago_envio) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+    $stmt->execute([$cliente_id, $auxiliar_id, $direccion_origen_id, $direccion_destino_id, $nombre_destinatario, $telefono_destinatario, $observaciones, $pago_envio]);
 
     $recoleccion_id = $pdo->lastInsertId();
 
     $stmt = $pdo->prepare("INSERT INTO recolecciones_paquetes (recoleccion_id, paquete_id, monto_cobro) VALUES (?, ?, ?)");
-$total_cobro = 0;
+    $total_cobro = 0;
 
-// Recolección de cobros definidos por el cliente
-foreach ($paquete_ids as $paquete_id => $cantidad) {
-  $monto = isset($monto_cobros[$paquete_id]) ? floatval($monto_cobros[$paquete_id]) : 0.00;
-  for ($i = 0; $i < (int)$cantidad; $i++) {
-    $stmt->execute([$recoleccion_id, $paquete_id, $monto]);
-  }
-  $total_cobro += ((int)$cantidad) * $monto;
-}
+    foreach ($paquete_ids as $paquete_id => $cantidad) {
+      $monto = isset($monto_cobros[$paquete_id]) ? floatval($monto_cobros[$paquete_id]) : 0.00;
+      for ($i = 0; $i < (int)$cantidad; $i++) {
+        $stmt->execute([$recoleccion_id, $paquete_id, $monto]);
+      }
+      $total_cobro += ((int)$cantidad) * $monto;
+    }
 
-// Sumar el valor de las tarifas solo si el pago es contra entrega
-$tarifa_envio_total = 0;
-foreach ($paquetes as $p) {
-  $id_paquete = $p['id'];
-  $cantidad = isset($paquete_ids[$id_paquete]) ? (int)$paquete_ids[$id_paquete] : 0;
-  $tarifa_envio_total += $cantidad * floatval($p['tarifa']);
-}
+    $tarifa_envio_total = 0;
+    foreach ($paquetes as $p) {
+      $id_paquete = $p['id'];
+      $cantidad = isset($paquete_ids[$id_paquete]) ? (int)$paquete_ids[$id_paquete] : 0;
+      $tarifa_envio_total += $cantidad * floatval($p['tarifa']);
+    }
 
-if ($pago_envio === 'destinatario') {
-  $total_cobro += $tarifa_envio_total;
-}
+    if ($pago_envio === 'destinatario') {
+      $total_cobro += $tarifa_envio_total;
+    }
 
+    $pdo->commit();
 
-$pdo->commit(); // ✅ Aquí ya está calculado
-
-
-$guia_script = '<script>
-  document.addEventListener("DOMContentLoaded", function() {
-    const modal = new bootstrap.Modal(document.getElementById("modalGuia"));    
-    document.getElementById("modalGuiaId").textContent = "' . $recoleccion_id . '";
-    document.getElementById("modalGuiaNombreRemitente").textContent = "' . $cliente_nombre . '";
-    document.getElementById("modalGuiaTelefonoRemitente").textContent = "' . $cliente_telefono . '";
-    document.getElementById("modalGuiaOrigen").textContent = "' . addslashes($direccion_origen_texto) . '";
-    document.getElementById("modalGuiaNombre").textContent = "' . $nombre_destinatario . '";
-    document.getElementById("modalGuiaTelefono").textContent = "' . $telefono_destinatario . '";
-    document.getElementById("modalGuiaDireccion").textContent = "' . addslashes($direccion_destino_texto) . '";
-    document.getElementById("modalGuiaDescripcion").textContent = "' . addslashes($observaciones) . '";
-    document.getElementById("modalGuiaPagoEnvio").textContent = "' . ($pago_envio === "cliente" ? "Cobro a mi cuenta" : "Cobro contra entrega") . '";
-    document.getElementById("modalGuiaCobro").textContent = "Q' . number_format($total_cobro, 2) . '";
-    modal.show();
-  });
-</script>';
+    $guia_script = '<script>
+      document.addEventListener("DOMContentLoaded", function() {
+        const modal = new bootstrap.Modal(document.getElementById("modalGuia"));
+        document.getElementById("modalGuiaId").textContent = "' . $recoleccion_id . '";
+        document.getElementById("modalGuiaNombreRemitente").textContent = "' . $cliente_nombre . '";
+        document.getElementById("modalGuiaTelefonoRemitente").textContent = "' . $cliente_telefono . '";
+        document.getElementById("modalGuiaOrigen").textContent = "' . addslashes($direccion_origen_texto) . '";
+        document.getElementById("modalGuiaNombre").textContent = "' . $nombre_destinatario . '";
+        document.getElementById("modalGuiaTelefono").textContent = "' . $telefono_destinatario . '";
+        document.getElementById("modalGuiaDireccion").textContent = "' . addslashes($direccion_destino_texto) . '";
+        document.getElementById("modalGuiaDescripcion").textContent = "' . addslashes($observaciones) . '";
+        document.getElementById("modalGuiaPagoEnvio").textContent = "' . ($pago_envio === "cliente" ? "Cobro a mi cuenta" : "Cobro contra entrega") . '";
+        document.getElementById("modalGuiaCobro").textContent = "Q' . number_format($total_cobro, 2) . '";
+        modal.show();
+      });
+    </script>';
 
   } catch (Exception $e) {
     $pdo->rollBack();
@@ -143,7 +120,21 @@ echo $guia_script;
 
 <div class="col-lg-10 col-12 p-4">
   <h2>Solicitar Recolección</h2>
-  <form method="POST" class="row g-3" id="form-recoleccion">
+  <form method="GET" class="mb-4">
+    <label class="form-label">Seleccionar Cliente</label>
+    <select name="cliente_id" class="form-select" onchange="this.form.submit()" required>
+      <option value="">Seleccione un cliente</option>
+      <?php foreach ($clientes as $cli): ?>
+      <option value="<?= $cli['cliente_id'] ?>" <?= $cliente_id == $cli['cliente_id'] ? 'selected' : '' ?>>
+        <?= htmlspecialchars($cli['nombre']) ?>
+      </option>
+      <?php endforeach; ?>
+    </select>
+  </form>
+
+  <?php if ($cliente_id): ?>
+  <form method="POST" class="row g-3">
+    <input type="hidden" name="cliente_id" value="<?= $cliente_id ?>">
     <div class="col-md-6">
       <label class="form-label">Dirección de Recolección</label>
       <select name="direccion_origen_id" class="form-select" required>
@@ -211,6 +202,7 @@ echo $guia_script;
       <a href="dashboard.php" class="btn btn-secondary">Cancelar</a>
     </div>
   </form>
+  <?php endif; ?>
 </div>
 
 <!-- Modal guía -->
