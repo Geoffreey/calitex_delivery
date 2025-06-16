@@ -53,10 +53,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
       $stmt = $pdo->prepare("UPDATE recolecciones SET estado_recoleccion = 'entregado', firma_ent = ? WHERE id = ? AND ruta_entrega_id IN ($placeholders)");
       $stmt->execute(array_merge([$firma_path, $recoleccion_id], $ruta_ids));
-    } elseif ($accion === 'cancelado') {
-      $stmt = $pdo->prepare("UPDATE recolecciones SET estado_recoleccion = 'cancelado' WHERE id = ? AND ruta_entrega_id IN ($placeholders)");
-      $stmt->execute(array_merge([$recoleecion_id], $ruta_ids));
+    } elseif ($accion === 'cancelado' && !empty($_POST['observacion_cancelacion'])) {
+      $observacion = trim($_POST['observacion_cancelacion']);
+      $stmt = $pdo->prepare("UPDATE recolecciones SET estado_recoleccion = 'cancelado', observacion_cancelacion = ? WHERE id = ? AND ruta_entrega_id IN ($placeholders)");
+      $stmt->execute(array_merge([$observacion, $recoleccion_id], $ruta_ids));
     }
+
 
     header("Location: ruta_recolecciones_entrega.php");
     exit;
@@ -74,7 +76,7 @@ $stmt = $pdo->prepare("
   LEFT JOIN zona z ON d.zona_id = z.id
   LEFT JOIN municipios m ON d.municipio_id = m.id
   LEFT JOIN departamentos dept ON d.departamento_id = dept.id
-  WHERE r.ruta_entrega_id IN ($placeholders) AND r.estado_recoleccion = 'recibido'
+  WHERE r.ruta_entrega_id IN ($placeholders) AND r.estado_recoleccion = 'recibido' AND r.estado_recoleccion NOT IN ('entregado', 'cancelado')
   ORDER BY r.created_at ASC
 ");
 $stmt->execute($ruta_ids);
@@ -111,11 +113,7 @@ $recolecciones = $stmt->fetchAll();
         <td><?= date('d/m/Y H:i', strtotime($r['created_at'])) ?></td>
         <td class="d-flex gap-2">
           <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalFirma" data-recoleccion-id="<?= $r['id'] ?>">Recogido</button>
-          <form method="POST">
-            <input type="hidden" name="recoleccion_id" value="<?= $r['id'] ?>">
-            <input type="hidden" name="accion" value="cancelado">
-            <button type="submit" class="btn btn-danger btn-sm">Cancelar</button>
-          </form>
+          <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#modalCancelar" data-recoleccion-id="<?= $r['id'] ?>">Cancelar</button>
         </td>
       </tr>
       <?php endforeach; ?>
@@ -142,6 +140,32 @@ $recolecciones = $stmt->fetchAll();
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
           <button type="submit" class="btn btn-primary">Guardar Firma</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal Cancelar -->
+<div class="modal fade" id="modalCancelar" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <form method="POST" id="formCancelar">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Cancelar Entrega</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Motivo de cancelación</label>
+            <textarea name="observacion_cancelacion" class="form-control" required></textarea>
+          </div>
+          <input type="hidden" name="recoleccion_id" id="recoleccion_id_cancelar">
+          <input type="hidden" name="accion" value="cancelado">
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+          <button type="submit" class="btn btn-danger">Confirmar Cancelación</button>
         </div>
       </div>
     </form>
@@ -180,6 +204,15 @@ $recolecciones = $stmt->fetchAll();
     const dataUrl = signaturePad.toDataURL();
     document.getElementById("firma_base64").value = dataUrl;
   });
+
+  //scrip para modal cancelar
+  const modalCancelar = document.getElementById("modalCancelar");
+  modalCancelar.addEventListener("shown.bs.modal", function (event) {
+  const button = event.relatedTarget;
+  const recoleccionId = button.getAttribute("data-recoleccion-id");
+  document.getElementById("recoleccion_id_cancelar").value = recoleccionId;
+});
+
 </script>
 
 <?php include 'partials/footer.php'; ?>
