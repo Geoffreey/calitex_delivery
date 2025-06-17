@@ -37,6 +37,9 @@ if ($cliente_id) {
   }
 }
 
+//obtener departamentos
+$departamentos = $pdo->query("SELECT id, nombre FROM departamentos ORDER BY nombre")->fetchAll();
+
 // Obtener paquetes disponibles
 $paquetes = $pdo->query("SELECT id, nombre, tamano, peso, tarifa FROM paquetes ORDER BY nombre")->fetchAll();
 $guia_script = "";
@@ -147,14 +150,17 @@ include 'partials/sidebar.php';
     <input type="hidden" name="cliente_id" value="<?= $cliente_id ?>">
     <div class="col-md-12">
       <label class="form-label">Dirección de Entrega</label>
-      <select name="direccion_destino_id" class="form-select" required>
-        <option value="">Seleccione</option>
-        <?php foreach ($direcciones as $dir): ?>
-          <option value="<?= $dir['id'] ?>">
-            <?= "{$dir['calle']} #{$dir['numero']}, Zona {$dir['zona']}, {$dir['municipio']}, {$dir['departamento']}" ?>
-          </option>
-        <?php endforeach; ?>
-      </select>
+      <div class="input-group">
+        <select name="direccion_destino_id" id="direccion_destino_id" class="form-select" required>
+          <option value="">Seleccione</option>
+          <?php foreach ($direcciones as $dir): ?>
+            <option value="<?= $dir['id'] ?>">
+              <?= "{$dir['calle']} #{$dir['numero']}, Zona {$dir['zona']}, {$dir['municipio']}, {$dir['departamento']}" ?>
+            </option>
+          <?php endforeach; ?>
+        </select>
+        <button type="button" class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#modalNuevaDireccion">+ Dirección</button>
+      </div>
     </div>
     <div class="col-md-6">
       <label class="form-label">Nombre del Destinatario</label>
@@ -269,6 +275,65 @@ include 'partials/sidebar.php';
       </div>
       <div class="modal-footer">
         <button type="submit" class="btn btn-primary">Guardar</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal para nueva dirección -->
+<div class="modal fade" id="modalNuevaDireccion" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <form class="modal-content" id="formNuevaDireccion">
+      <div class="modal-header">
+        <h5 class="modal-title">Agregar nueva dirección</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" name="cliente_id" value="<?= $cliente_id ?>">
+        <div class="mb-2">
+          <label class="form-label">Tipo</label>
+          <select name="tipo" class="form-select" required>
+            <option value="entrega">Entrega</option>
+            <option value="recoleccion">Recolección</option>
+          </select>
+        </div>
+        <div class="mb-2">
+          <label class="form-label">Calle</label>
+          <input type="text" name="calle" class="form-control" required>
+        </div>
+        <div class="mb-2">
+          <label class="form-label">Número</label>
+          <input type="text" name="numero" class="form-control" required>
+        </div>
+        <div class="mb-2">
+          <label class="form-label">Departamento</label>
+          <select name="departamento_id" id="departamento_modal" class="form-select" required>
+            <option value="">Seleccione</option>
+            <?php foreach ($departamentos as $d): ?>
+              <option value="<?= $d['id'] ?>"><?= $d['nombre'] ?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+        <div class="mb-2">
+          <label class="form-label">Municipio</label>
+          <select name="municipio_id" id="municipio_modal" class="form-select" required>
+            <option value="">Seleccione</option>
+          </select>
+        </div>
+        <div class="mb-2">
+          <label class="form-label">Zona</label>
+          <select name="zona_id" id="zona_modal" class="form-select" required>
+            <option value="">Seleccione</option>
+          </select>
+        </div>
+        <div class="mb-2">
+          <label class="form-label">Referencia</label>
+          <textarea name="referencia" class="form-control" rows="2"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="submit" class="btn btn-success">Guardar dirección</button>
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
       </div>
     </form>
@@ -415,6 +480,63 @@ document.getElementById('formNuevoCliente').addEventListener('submit', function(
     alert(err.message);
   });
 });
+
+//Scrip modal crear direcciones
+document.getElementById('formNuevaDireccion').addEventListener('submit', function (e) {
+  e.preventDefault();
+  const formData = new FormData(this);
+
+  fetch('../ajax/crear_direccion.php', {
+    method: 'POST',
+    body: formData
+  })
+  .then(res => {
+    if (!res.ok) throw new Error("Error al guardar dirección.");
+    return res.json();
+  })
+  .then(dir => {
+    const select = document.getElementById('direccion_destino_id');
+    const option = document.createElement('option');
+    option.value = dir.id;
+    option.textContent = dir.texto;
+    option.selected = true;
+    select.appendChild(option);
+
+    // Cerrar modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('modalNuevaDireccion'));
+    modal.hide();
+  })
+  .catch(err => alert(err.message));
+});
+
+document.getElementById('departamento_modal').addEventListener('change', function () {
+  const id = this.value;
+  fetch(`../ajax/municipios_por_departamento.php?departamento_id=${id}`)
+    .then(res => res.json())
+    .then(data => {
+      const mun = document.getElementById('municipio_modal');
+      mun.innerHTML = '<option value="">Seleccione</option>';
+      data.forEach(m => {
+        mun.innerHTML += `<option value="${m.id}">${m.nombre}</option>`;
+      });
+
+      document.getElementById('zona_modal').innerHTML = '<option value="">Seleccione</option>';
+    });
+});
+
+document.getElementById('municipio_modal').addEventListener('change', function () {
+  const id = this.value;
+  fetch(`../ajax/zonas_por_municipio.php?municipio_id=${id}`)
+    .then(res => res.json())
+    .then(data => {
+      const zona = document.getElementById('zona_modal');
+      zona.innerHTML = '<option value="">Seleccione</option>';
+      data.forEach(z => {
+        zona.innerHTML += `<option value="${z.id}">Zona ${z.numero}</option>`;
+      });
+    });
+});
+
 </script>
 
 <?php include 'partials/footer.php'; ?>
