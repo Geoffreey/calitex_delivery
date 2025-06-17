@@ -9,7 +9,6 @@ if (!isset($_SESSION['user_id']) || $_SESSION['rol'] !== 'auxiliar') {
 
 // Obtener datos para selects
 $departamentos = $pdo->query("SELECT id, nombre FROM departamentos ORDER BY nombre")->fetchAll();
-$municipios = $pdo->query("SELECT id, nombre FROM municipios ORDER BY nombre")->fetchAll();
 $zonas = $pdo->query("
   SELECT z.id, z.numero, m.nombre AS municipio 
   FROM zona z 
@@ -17,7 +16,7 @@ $zonas = $pdo->query("
   ORDER BY m.nombre, z.numero
 ")->fetchAll();
 
-// Obtener lista de clientes (desde users con rol cliente)
+// Obtener lista de clientes
 $clientes = $pdo->query("SELECT id, nombre FROM users WHERE rol = 'cliente' ORDER BY nombre")->fetchAll();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -30,35 +29,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $departamento_id = $_POST['departamento_id'];
   $referencia = $_POST['referencia'];
 
-  // Validar que el cliente exista en users
-  $stmt = $pdo->prepare("SELECT COUNT(*) FROM users WHERE id = ? AND rol = 'cliente'");
-  $stmt->execute([$user_cliente_id]);
-  if ($stmt->fetchColumn() == 0) {
-    echo "Cliente no válido.";
-    exit;
-  }
-
-  // Obtener el ID real del cliente desde la tabla clientes (usado en direcciones)
-  $stmt = $pdo->prepare("SELECT id FROM clientes WHERE user_id = ?");
-  $stmt->execute([$user_cliente_id]);
-  $cliente_id_real = $stmt->fetchColumn();
-
-  if (!$cliente_id_real) {
-    echo "No se encontró el cliente en la tabla clientes.";
-    exit;
-  }
-
   try {
+    // Validar cliente
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM users WHERE id = ? AND rol = 'cliente'");
+    $stmt->execute([$user_cliente_id]);
+    if ($stmt->fetchColumn() == 0) {
+      $_SESSION['mensaje_error'] = "Cliente no válido.";
+      header("Location: crear_direccion.php");
+      exit;
+    }
+
+    // Obtener ID real del cliente
+    $stmt = $pdo->prepare("SELECT id FROM clientes WHERE user_id = ?");
+    $stmt->execute([$user_cliente_id]);
+    $cliente_id_real = $stmt->fetchColumn();
+
+    if (!$cliente_id_real) {
+      $_SESSION['mensaje_error'] = "No se encontró el cliente en la tabla clientes.";
+      header("Location: agregar_direccion.php");
+      exit;
+    }
+
+    // Insertar dirección
     $stmt = $pdo->prepare("
       INSERT INTO direcciones 
       (cliente_id, tipo, calle, numero, zona_id, municipio_id, departamento_id, referencia)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     ");
     $stmt->execute([$cliente_id_real, $tipo, $calle, $numero, $zona_id, $municipio_id, $departamento_id, $referencia]);
-    header("Location: crear_direccion.php");
+
+    $_SESSION['mensaje_exito'] = "Dirección creada exitosamente.";
+    header("Location: agregar_direccion.php");
     exit;
   } catch (Exception $e) {
-    echo "Error al guardar dirección: " . $e->getMessage();
+    $_SESSION['mensaje_error'] = "Error al guardar dirección: " . $e->getMessage();
+    header("Location: agregar_direccion.php");
+    exit;
   }
 }
 
@@ -66,13 +72,26 @@ include 'partials/header.php';
 include 'partials/sidebar.php';
 ?>
 
+<!-- Select2 y jQuery -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
 <div class="col-lg-10 col-12 p-4">
+  <?php if (isset($_SESSION['mensaje_exito'])): ?>
+    <div class="alert alert-success"><?= $_SESSION['mensaje_exito']; unset($_SESSION['mensaje_exito']); ?></div>
+  <?php endif; ?>
+
+  <?php if (isset($_SESSION['mensaje_error'])): ?>
+    <div class="alert alert-danger"><?= $_SESSION['mensaje_error']; unset($_SESSION['mensaje_error']); ?></div>
+  <?php endif; ?>
+
   <h2>Agregar Nueva Dirección</h2>
   <form method="POST" class="row g-3">
 
     <div class="col-md-6">
       <label class="form-label">Seleccionar Cliente</label>
-      <select name="cliente_id" class="form-select" required>
+      <select id="cliente_id" name="cliente_id" class="form-select" required>
         <option value="">Seleccione un cliente</option>
         <?php foreach ($clientes as $cli): ?>
           <option value="<?= $cli['id'] ?>" <?= isset($_POST['cliente_id']) && $_POST['cliente_id'] == $cli['id'] ? 'selected' : '' ?>>
@@ -132,13 +151,17 @@ include 'partials/sidebar.php';
 </div>
 
 <script>
+$(document).ready(function () {
+  $('#cliente_id').select2({
+    placeholder: "Buscar cliente...",
+    width: '100%'
+  });
+});
+
 document.getElementById('departamento').addEventListener('change', function () {
   const departamento_id = this.value;
   fetch('../ajax/municipios_por_departamento.php?departamento_id=' + departamento_id)
-    .then(res => {
-      if (!res.ok) throw new Error('Error HTTP: ' + res.status);
-      return res.json();
-    })
+    .then(res => res.json())
     .then(data => {
       const municipioSelect = document.getElementById('municipio');
       municipioSelect.innerHTML = '<option value="">Seleccione</option>';
@@ -156,10 +179,7 @@ document.getElementById('departamento').addEventListener('change', function () {
 document.getElementById('municipio').addEventListener('change', function () {
   const municipio_id = this.value;
   fetch('../ajax/zonas_por_municipio.php?municipio_id=' + municipio_id)
-    .then(res => {
-      if (!res.ok) throw new Error('Error HTTP: ' + res.status);
-      return res.json();
-    })
+    .then(res => res.json())
     .then(data => {
       const zonaSelect = document.getElementById('zona');
       zonaSelect.innerHTML = '<option value="">Seleccione</option>';
