@@ -44,7 +44,7 @@
   <div class="list-group list-group-flush mt-3">
     <a href="dashboard.php" class="list-group-item list-group-item-action">Inicio</a>
     <a href="clientes.php" class="list-group-item list-group-item-action">Clientes</a>
-    <a href="crear_direccion2.php" class="list-group-item list-group-item-action">Direcciones</a>
+    <a href="crear_direccion.php" class="list-group-item list-group-item-action">Direcciones</a>
     <a href="crear_envio2.php" class="list-group-item list-group-item-action">Crear envio</a>
     <a href="crear_recoleccion.php" class="list-group-item list-group-item-action">Crear recoleccion</a>
 

@@ -116,28 +116,36 @@ include 'partials/header.php';
 include 'partials/sidebar.php';
 
 // Mostrar alerta si el cliente no tiene direcciones
-if ($cliente_id && empty($direcciones)) {
-  echo "<div class='alert alert-warning'>Este cliente no tiene direcciones registradas aún. Por favor agregue al menos una dirección para continuar con la creación del envío.</div>";
-}
+
 ?>
 
 <div class="col-lg-10 col-12 p-4">
   <h2>Crear Envío</h2>
+  <!--Mostrar alerta si el cliente no tiene direcciones-->
+  <?php if ($cliente_id && empty($direcciones)): ?>
+    <div class="alert alert-warning text-center">
+      Este cliente no tiene direcciones registradas aún.<br>
+      Por favor agregue al menos una dirección para continuar con la creación del envío.
+    </div>
+  <?php endif; ?>
   <form method="GET" class="mb-4">
-        <label class="form-label">Seleccionar Cliente</label>
-        <select name="cliente_id" class="form-select" onchange="this.form.submit()" required>
-            <option value="">Seleccione un cliente</option>
-            <?php foreach ($clientes as $cli): ?>
-            <option value="<?= $cli['cliente_id'] ?>" <?= $cliente_id == $cli['cliente_id'] ? 'selected' : '' ?>>
-                <?= htmlspecialchars($cli['nombre']) ?>
-            </option>
-            <?php endforeach; ?>
-        </select>
-    </form>
-    <?php if ($cliente_id): ?>
-    <form method="POST" class="row g-3" id="form-envio">
-        <input type="hidden" name="cliente_id" value="<?= $cliente_id ?>">
-        <div class="col-md-12">
+    <label class="form-label">Seleccionar Cliente</label>
+    <div class="input-group">
+      <select name="cliente_id" id="cliente_id" class="form-select" onchange="this.form.submit()" required>
+        <option value="">Seleccione un cliente</option>
+        <?php foreach ($clientes as $cli): ?>
+        <option value="<?= $cli['cliente_id'] ?>" <?= $cliente_id == $cli['cliente_id'] ? 'selected' : '' ?>>
+          <?= htmlspecialchars($cli['nombre']) ?>
+        </option>
+        <?php endforeach; ?>
+      </select>
+      <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalNuevoCliente">+ Cliente</button>
+    </div>
+  </form>
+  <?php if ($cliente_id): ?>
+  <form method="POST" class="row g-3" id="form-envio">
+    <input type="hidden" name="cliente_id" value="<?= $cliente_id ?>">
+    <div class="col-md-12">
       <label class="form-label">Dirección de Entrega</label>
       <select name="direccion_destino_id" class="form-select" required>
         <option value="">Seleccione</option>
@@ -209,27 +217,61 @@ if ($cliente_id && empty($direcciones)) {
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content" id="contenidoGuia">
       <div class="modal-body">
-<pre style="font-family: monospace; white-space: pre-wrap;">
-----------------------------------------
-          📨 GUÍA DE ENTREGA - ENVÍO
-----------------------------------------
-No. de Guía: <span id="modalGuiaId"></span>
-Nombre: <span id="modalGuiaNombre"></span>
-Teléfono: <span id="modalGuiaTelefono"></span>
-Dirección: <span id="modalGuiaDireccion"></span>
-Descripción: <span id="modalGuiaDescripcion"></span>
-Forma de pago del envío: <span id="modalGuiaPagoEnvio"></span>
-Cobro total al cliente: <span id="modalGuiaCobro"></span><br>
+        <pre style="font-family: monospace; white-space: pre-wrap;">
+          ----------------------------------------
+                📨 GUÍA DE ENTREGA - ENVÍO
+          ----------------------------------------
+          No. de Guía: <span id="modalGuiaId"></span>
+          Nombre: <span id="modalGuiaNombre"></span>
+          Teléfono: <span id="modalGuiaTelefono"></span>
+          Dirección: <span id="modalGuiaDireccion"></span>
+          Descripción: <span id="modalGuiaDescripcion"></span>
+          Forma de pago del envío: <span id="modalGuiaPagoEnvio"></span>
+          Cobro total al cliente: <span id="modalGuiaCobro"></span><br>
 
-📦 ¡Gracias por usar nuestro servicio!
-----------------------------------------
-</pre>
+          📦 ¡Gracias por usar nuestro servicio!
+          ----------------------------------------
+        </pre>
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary" onclick="imprimirGuia()">Imprimir</button>
         <a href="#" onclick="descargarPDF()" class="btn btn-success">Descargar PDF</a>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- Modal para nuevo cliente -->
+<div class="modal fade" id="modalNuevoCliente" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <form class="modal-content" id="formNuevoCliente">
+      <div class="modal-header">
+        <h5 class="modal-title">Crear nuevo cliente</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label">Nombre</label>
+          <input type="text" name="nombre" class="form-control" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Apellido</label>
+          <input type="text" name="apellido" class="form-control" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Teléfono</label>
+          <input type="text" name="telefono" class="form-control" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Correo electrónico</label>
+          <input type="email" name="email" class="form-control" required>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="submit" class="btn btn-primary">Guardar</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+      </div>
+    </form>
   </div>
 </div>
 
@@ -338,6 +380,41 @@ Cobro total al cliente: <span id="modalGuiaCobro"></span><br>
   ventana.print();
   ventana.close();
 }
+
+//Script modal crear cleinte
+document.getElementById('formNuevoCliente').addEventListener('submit', function(e) {
+  e.preventDefault();
+
+  const formData = new FormData(this);
+
+  fetch('../ajax/crear_cliente.php', {
+    method: 'POST',
+    body: formData
+  })
+  .then(res => {
+    if (!res.ok) throw new Error("Error al crear cliente.");
+    return res.json();
+  })
+  .then(cliente => {
+    const select = document.getElementById('cliente_id');
+    const option = document.createElement('option');
+    option.value = cliente.id;
+    option.textContent = cliente.nombre;
+    option.selected = true;
+    select.appendChild(option);
+
+    // Cerrar modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('modalNuevoCliente'));
+    modal.hide();
+
+    // Enviar el formulario GET para recargar direcciones
+    const form = document.querySelector('form[method="GET"]');
+    form.submit();
+  })
+  .catch(err => {
+    alert(err.message);
+  });
+});
 </script>
 
 <?php include 'partials/footer.php'; ?>
