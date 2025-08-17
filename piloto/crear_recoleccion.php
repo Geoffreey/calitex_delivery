@@ -81,11 +81,100 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $cliente_id) {
   try {
     $pdo->beginTransaction();
 
-    // ⬇️ Cambio: insertar piloto_id en lugar de auxiliar_id
-    $stmt = $pdo->prepare("INSERT INTO recolecciones (cliente_id, piloto_id, direccion_origen_id, direccion_destino_id, nombre_destinatario, telefono_destinatario, descripcion, pago_envio) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-    $stmt->execute([$cliente_id, $piloto_id, $direccion_origen_id, $direccion_destino_id, $nombre_destinatario, $telefono_destinatario, $observaciones, $pago_envio]);
+    // Semana ISO actual (e.g. 2025-W33) si decides usar semana_asignada
+// ✅ Determinar la ruta ACTIVA del piloto (prioriza 'principal' y la última asignada)
+// Si usas semana_asignada, calculamos la actual (formato ISO: 2025-W33)
+$semanaActual = date('o-\WW');
 
-    $recoleccion_id = $pdo->lastInsertId();
+// 1) Ruta activa del piloto para la semana actual (si llenas semana_asignada)
+$stmtRuta = $pdo->prepare("
+  SELECT id
+  FROM rutas
+  WHERE piloto_id = ?
+    AND estado_ruta = 'activa'
+    AND (estado IS NULL OR estado = 1)
+    AND semana_asignada = ?
+  ORDER BY (tipo_asignacion = 'principal') DESC,
+           fecha_asignacion DESC, id DESC
+  LIMIT 1
+");
+$stmtRuta->execute([$piloto_id, $semanaActual]);
+$ruta_id = (int)$stmtRuta->fetchColumn();
+
+// 2) Si no hay con semana, toma cualquier activa (prioriza principal)
+if (!$ruta_id) {
+  $stmtRuta2 = $pdo->prepare("
+    SELECT id
+    FROM rutas
+    WHERE piloto_id = ?
+      AND estado_ruta = 'activa'
+      AND (estado IS NULL OR estado = 1)
+    ORDER BY (tipo_asignacion = 'principal') DESC,
+             fecha_asignacion DESC, id DESC
+    LIMIT 1
+  ");
+  $stmtRuta2->execute([$piloto_id]);
+  $ruta_id = (int)$stmtRuta2->fetchColumn();
+}
+
+// 3) Si no existe, crearla
+if (!$ruta_id) {
+  $stmtCreateRuta = $pdo->prepare("
+    INSERT INTO rutas
+      (nombre, descripcion, estado, piloto_id, fecha_creacion, fecha_asignacion, tipo_asignacion, semana_asignada, estado_ruta)
+    VALUES
+      (CONCAT('Ruta ', DATE_FORMAT(NOW(), '%Y-%m-%d')),
+       'Creada automáticamente desde módulo Pilotos',
+       1, ?, NOW(), NOW(), 'principal', ?, 'activa')
+  ");
+  $stmtCreateRuta->execute([$piloto_id, $semanaActual]);
+  $ruta_id = (int)$pdo->lastInsertId();
+}
+
+
+    // ⬇️ Insert con ruta_recoleccion_id
+$stmt = $pdo->prepare("
+  INSERT INTO recolecciones
+    (cliente_id, piloto_id, ruta_recoleccion_id, direccion_origen_id, direccion_destino_id,
+     nombre_destinatario, telefono_destinatario, descripcion, pago_envio)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+");
+$stmt->execute([
+  $cliente_id,
+  $piloto_id,          // id real en tabla pilotos
+  $ruta_id,            // ✅ la ruta activa hallada/creada
+  $direccion_origen_id,
+  $direccion_destino_id,
+  $nombre_destinatario,
+  $telefono_destinatario,
+  $observaciones,
+  $pago_envio
+]);
+
+$recoleccion_id = $pdo->lastInsertId();
+
+
+// (Opcional) marcar recolección como asignada
+$pdo->prepare("UPDATE recolecciones SET estado_recoleccion = 'pendiente' WHERE id = ?")
+    ->execute([$recoleccion_id]);
+
+// Historial (opcional, si ya tienes esta tabla)
+// Obtener metadatos de la ruta para el historial
+$stmtMeta = $pdo->prepare("SELECT tipo_asignacion, semana_asignada FROM rutas WHERE id = ?");
+$stmtMeta->execute([$ruta_id]);
+$meta = $stmtMeta->fetch(PDO::FETCH_ASSOC) ?: [];
+
+$tipo_asignacion_hist = $meta['tipo_asignacion'] ?: 'principal';
+$semana_hist          = $meta['semana_asignada'] ?: date('o-\WW'); // p.ej. 2025-W33
+
+// Insertar en historial_asignaciones_recolecciones (formato correcto)
+$pdo->prepare("
+  INSERT INTO historial_asignaciones_recolecciones
+  (ruta_id, piloto_id, tipo_asignacion, tipo_recoleccion, semana_asignada, fecha_asignacion, estado)
+  VALUES (?, ?, ?, 'recoleccion', ?, NOW(), 'pendiente')
+")->execute([$ruta_id, $piloto_id, $tipo_asignacion_hist, $semana_hist]);
+
+
 
     $stmt = $pdo->prepare("INSERT INTO recolecciones_paquetes (recoleccion_id, paquete_id, monto_cobro) VALUES (?, ?, ?)");
     $total_cobro = 0;
