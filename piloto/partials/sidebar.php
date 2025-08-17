@@ -8,6 +8,7 @@
     <a href="dashboard.php" class="list-group-item list-group-item-action">Inicio</a>
     <!--<a href="ruta_asignada.php" class="list-group-item list-group-item-action">Rutas asignadas</a>-->
     <a href="ruta_asignada_recoleccion.php" class="list-group-item list-group-item-action">Recolecciones</a>
+    <a href="crear_recoleccion.php" class="list-group-item list-group-item-action">Crear recoleccion</a>
     <a href="ruta_asignada_envios.php"class="list-group-item list-group-item-action">Envios</a>
     <a href="perfil.php" class="list-group-item list-group-item-action">Mi perfil</a>
   </div>
@@ -19,6 +20,7 @@
     <a href="dashboard.php" class="list-group-item list-group-item-action">Inicio</a>
     <!--<a href="ruta_asignada.php" class="list-group-item list-group-item-action">Rutas asignadas</a>-->
     <a href="ruta_asignada_recoleccion.php" class="list-group-item list-group-item-action">Recolecciones</a>
+    <a href="crear_recoleccion.php" class="list-group-item list-group-item-action">Crear recoleccion</a>
     <a href="ruta_recolecciones_entrega.php" class="list-group-item list-group-item-action">Recolecciones por entregar</a>
     <a href="ruta_asignada_envios.php" class="list-group-item list-group-item-action">Envios</a>
     <a href="perfil.php" class="list-group-item list-group-item-action">Mi perfil</a>
