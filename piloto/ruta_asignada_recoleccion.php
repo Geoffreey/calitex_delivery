@@ -10,23 +10,115 @@ if (!isset($_SESSION['user_id']) || $_SESSION['rol'] !== 'piloto') {
 // Obtener ID del piloto
 $stmt = $pdo->prepare("SELECT id FROM pilotos WHERE user_id = ?");
 $stmt->execute([$_SESSION['user_id']]);
-$piloto = $stmt->fetch();
+$piloto = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$piloto) {
+  include 'partials/header.php';
+  include 'partials/sidebar.php';
   echo "<div class='p-4 alert alert-warning'>No tienes un perfil de piloto asignado aún.</div>";
   include 'partials/footer.php';
   exit;
 }
 
-$piloto_id = $piloto['id'];
+$piloto_id = (int)$piloto['id'];
 
-include 'partials/header.php';
-include 'partials/sidebar.php';
+/* =======================
+   POST: Confirmar acciones
+   ======================= */
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['recoleccion_id'], $_POST['accion'])) {
 
-// Obtener todas las rutas asignadas al piloto
+  // Obtener todas las rutas asignadas al piloto
+  $stmt = $pdo->prepare("SELECT id FROM rutas WHERE piloto_id = ?");
+  $stmt->execute([$piloto_id]);
+  $rutas = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+  if (!empty($rutas)) {
+    $ruta_ids = [];
+foreach ($rutas as $r) {
+  $ruta_ids[] = (int)$r['id'];
+}
+    $placeholders = implode(',', array_fill(0, count($ruta_ids), '?'));
+  } else {
+    // Sin rutas, no debería poder operar
+    header("Location: ruta_asignada_recoleccion.php");
+    exit;
+  }
+
+  $recoleccion_id = (int)$_POST['recoleccion_id'];
+  $accion = $_POST['accion'];
+
+  if ($accion === 'recibido' && !empty($_POST['firma_base64'])) {
+    // Asegurar directorio de firmas
+    $dirFirmas = realpath(__DIR__ . '/../firmas');
+    if ($dirFirmas === false) {
+      // si no existe, intentar crearlo
+      @mkdir(__DIR__ . '/../firmas', 0775, true);
+      $dirFirmas = realpath(__DIR__ . '/../firmas');
+      if ($dirFirmas === false) {
+        // No se pudo crear
+        $_SESSION['flash_error'] = 'No se pudo crear el directorio de firmas.';
+        header("Location: ruta_asignada_recoleccion.php");
+        exit;
+      }
+    }
+
+    // Guardar firma
+    $firma_data = $_POST['firma_base64'];
+    $firma_data = preg_replace('#^data:image/\w+;base64,#i', '', $firma_data);
+    $firma_bin  = base64_decode(str_replace(' ', '+', $firma_data));
+    $firma_nombre = 'firmarec_' . $recoleccion_id . '_' . time() . '.png';
+    $firma_path_rel = '../firmas/' . $firma_nombre;
+    $firma_path_abs = __DIR__ . '/../firmas/' . $firma_nombre;
+    file_put_contents($firma_path_abs, $firma_bin);
+
+    // Solo cerramos FASE 1 (recogida). NO tocar estado_recoleccion_entrega.
+    $sql = "UPDATE recolecciones 
+            SET estado_recoleccion = 'recibido',
+                fecha_recogido = NOW(),
+                firma_rec = ?
+            WHERE id = ? 
+              AND ruta_recoleccion_id IN ($placeholders)
+              AND estado <> 'cancelado'";
+    $params = array_merge([$firma_path_rel, $recoleccion_id], $ruta_ids);
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
+
+    // Opcional: podrías insertar en historial aquí si lo deseas.
+
+  } elseif ($accion === 'cancelado' && !empty($_POST['observacion_cancelacion'])) {
+    $observacion = trim($_POST['observacion_cancelacion']);
+
+    // Cancelar FASE 1
+    $sql = "UPDATE recolecciones 
+            SET estado_recoleccion = 'cancelado',
+                observacion_cancelacion = ?
+            WHERE id = ?
+              AND ruta_recoleccion_id IN ($placeholders)
+              AND estado <> 'cancelado'";
+    $params = array_merge([$observacion, $recoleccion_id], $ruta_ids);
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
+
+    // El trigger pondrá estado='cancelado'.
+    // Opcional: insertar historial.
+
+  }
+
+  header("Location: ruta_asignada_recoleccion.php");
+  exit;
+}
+
+/* =======================
+   GET: Render de pantalla
+   ======================= */
+
+// Obtener todas las rutas asignadas al piloto (para el listado)
 $stmt = $pdo->prepare("SELECT id, nombre FROM rutas WHERE piloto_id = ?");
 $stmt->execute([$piloto_id]);
 $rutas = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+include 'partials/header.php';
+include 'partials/sidebar.php';
 
 if (empty($rutas)) {
   echo "<div class='p-4 alert alert-warning'>No tienes rutas asignadas aún.</div>";
@@ -34,11 +126,11 @@ if (empty($rutas)) {
   exit;
 }
 
-// Extraer los IDs de las rutas
 $ruta_ids = array_column($rutas, 'id');
 $placeholders = implode(',', array_fill(0, count($ruta_ids), '?'));
 
-// Obtener recolecciones asignadas a esas rutas
+// Recolecciones PENDIENTES DE RECOGER (FASE 1)
+// Nota: no incluimos canceladas y no incluimos ya recibidas
 $stmt = $pdo->prepare("
   SELECT r.id AS recoleccion_id, r.descripcion, r.created_at, r.ruta_recoleccion_id,
          u.nombre AS cliente_nombre, u.apellido AS cliente_apellido, u.telefono,
@@ -54,45 +146,22 @@ $stmt = $pdo->prepare("
   LEFT JOIN zona z ON d.zona_id = z.id
   LEFT JOIN municipios m ON d.municipio_id = m.id
   LEFT JOIN departamentos dept ON d.departamento_id = dept.id
-  WHERE r.ruta_recoleccion_id IN ($placeholders) AND r.estado_recoleccion NOT IN ('recibido', 'cancelado')
+  WHERE r.ruta_recoleccion_id IN ($placeholders)
+    AND r.estado = 'pendiente'
+    AND r.estado_recoleccion = 'pendiente'
   ORDER BY r.created_at ASC
 ");
 $stmt->execute($ruta_ids);
-$recolecciones = $stmt->fetchAll();
-
-// Confirmar recolección
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-  if (isset($_POST['recoleccion_id']) && isset($_POST['accion'])) {
-    $recoleccion_id = $_POST['recoleccion_id'];
-    $accion = $_POST['accion'];
-
-    if ($accion === 'recibido' && !empty($_POST['firma_base64'])) {
-      $firma_data = $_POST['firma_base64'];
-      $firma_data = str_replace('data:image/png;base64,', '', $firma_data);
-      $firma_data = str_replace(' ', '+', $firma_data);
-      $firma_bin = base64_decode($firma_data);
-
-      $firma_nombre = 'firmarec_' . $recoleccion_id . '_' . time() . '.png';
-      $firma_path = '../firmas/' . $firma_nombre;
-      file_put_contents($firma_path, $firma_bin);
-
-      $stmt = $pdo->prepare("UPDATE recolecciones SET estado_recoleccion = 'recibido', firma_rec = ? WHERE id = ? AND ruta_recoleccion_id IN ($placeholders)");
-      $stmt->execute(array_merge([$firma_path, $recoleccion_id], $ruta_ids));
-    } elseif ($accion === 'cancelado' && !empty($_POST['observacion_cancelacion'])) {
-      $observacion = trim($_POST['observacion_cancelacion']);
-      $stmt = $pdo->prepare("UPDATE recolecciones SET estado_recoleccion = 'cancelado', observacion_cancelacion = ? WHERE id = ? AND ruta_recoleccion_id IN ($placeholders)");
-      $stmt->execute(array_merge([$observacion, $recoleccion_id], $ruta_ids));
-    }
-
-
-    header("Location: ruta_asignada_recoleccion.php");
-    exit;
-  }
-}
+$recolecciones = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
 <div class="col-lg-10 col-12 p-4">
-  <h2>Recolecciones asignadas</h2>
+  <h2>Recolecciones asignadas (por recoger)</h2>
+
+  <?php if (!empty($_SESSION['flash_error'])): ?>
+    <div class="alert alert-danger"><?= htmlspecialchars($_SESSION['flash_error']) ?></div>
+    <?php unset($_SESSION['flash_error']); ?>
+  <?php endif; ?>
 
   <?php if (empty($recolecciones)): ?>
     <div class="alert alert-info">No tienes recolecciones pendientes por recoger.</div>
@@ -104,7 +173,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           <th>Cliente</th>
           <th>Teléfono</th>
           <th>Dirección</th>
-          <th>Decripción</th>
+          <th>Descripción</th>
           <th>Fecha</th>
           <th>Acciones</th>
         </tr>
@@ -112,17 +181,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <tbody>
         <?php foreach ($recolecciones as $r): ?>
           <tr>
-            <td><?= $r['recoleccion_id'] ?></td>
-            <td><?= $r['cliente_nombre'] . ' ' . $r['cliente_apellido'] ?></td>
+            <td><?= (int)$r['recoleccion_id'] ?></td>
+            <td><?= htmlspecialchars($r['cliente_nombre'] . ' ' . $r['cliente_apellido']) ?></td>
             <td><?= htmlspecialchars($r['telefono']) ?></td>
             <td>
-              <?= $r['calle'] . ' ' . $r['numero'] . ', Zona ' . $r['zona'] . ', ' . $r['municipio'] . ', ' . $r['departamento'] ?>
+              <?= htmlspecialchars($r['calle'] . ' ' . $r['numero']) ?>,
+              <?= 'Zona ' . htmlspecialchars($r['zona']) ?>,
+              <?= htmlspecialchars($r['municipio']) ?>,
+              <?= htmlspecialchars($r['departamento']) ?>
             </td>
-            <td><?= $r['descripcion'] ?></td>
+            <td><?= htmlspecialchars($r['descripcion']) ?></td>
             <td><?= date('d/m/Y H:i', strtotime($r['created_at'])) ?></td>
             <td class="d-flex gap-2">
-              <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalFirma" data-recoleccion-id="<?= $r['recoleccion_id'] ?>">Recogido</button>
-              <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#modalCancelar" data-recoleccion-id="<?= $r['recoleccion_id'] ?>">Cancelar</button>
+              <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalFirma" data-recoleccion-id="<?= (int)$r['recoleccion_id'] ?>">Recogido</button>
+              <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#modalCancelar" data-recoleccion-id="<?= (int)$r['recoleccion_id'] ?>">Cancelar</button>
             </td>
           </tr>
         <?php endforeach; ?>
@@ -131,13 +203,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <?php endif; ?>
 </div>
 
-<!-- Modal Firma -->
+<!-- Modal Firma (FASE 1) -->
 <div class="modal fade" id="modalFirma" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog">
     <form method="POST" id="formFirma">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">Firma del destinatario</h5>
+          <h5 class="modal-title">Firma de recogida</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
         </div>
         <div class="modal-body">
@@ -145,8 +217,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           <input type="hidden" name="firma_base64" id="firma_base64">
           <input type="hidden" name="recoleccion_id" id="recoleccion_id_firma">
           <input type="hidden" name="accion" value="recibido">
+          <small class="text-muted d-block mt-2">Use el mouse o el dedo para firmar.</small>
         </div>
         <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" id="btnClearFirma">Limpiar</button>
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
           <button type="submit" class="btn btn-primary">Guardar Firma</button>
         </div>
@@ -196,12 +270,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
   window.addEventListener("resize", resizeCanvas);
 
-  const modal = document.getElementById("modalFirma");
-  modal.addEventListener("shown.bs.modal", function (event) {
+  const modalFirma = document.getElementById("modalFirma");
+  modalFirma.addEventListener("shown.bs.modal", function (event) {
     const button = event.relatedTarget;
     const recoleccionId = button.getAttribute("data-recoleccion-id");
     document.getElementById("recoleccion_id_firma").value = recoleccionId;
     resizeCanvas();
+  });
+
+  document.getElementById("btnClearFirma").addEventListener("click", function() {
+    signaturePad.clear();
   });
 
   document.getElementById("formFirma").addEventListener("submit", function (e) {
@@ -210,18 +288,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       e.preventDefault();
       return;
     }
-    const dataUrl = signaturePad.toDataURL();
+    const dataUrl = signaturePad.toDataURL("image/png");
     document.getElementById("firma_base64").value = dataUrl;
   });
 
-  //scrip para candelar
+  // Modal Cancelar
   const modalCancelar = document.getElementById("modalCancelar");
   modalCancelar.addEventListener("shown.bs.modal", function (event) {
-  const button = event.relatedTarget;
-  const recoleccionId = button.getAttribute("data-recoleccion-id");
-  document.getElementById("recoleccion_id_cancelar").value = recoleccionId;
-});
-
+    const button = event.relatedTarget;
+    const recoleccionId = button.getAttribute("data-recoleccion-id");
+    document.getElementById("recoleccion_id_cancelar").value = recoleccionId;
+  });
 </script>
 
 <?php include 'partials/footer.php'; ?>
