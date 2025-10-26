@@ -48,116 +48,87 @@ foreach ($rutas as $r) {
   $accion = $_POST['accion'];
 
   if ($accion === 'recibido' && !empty($_POST['firma_base64'])) {
-    // Asegurar directorio de firmas
-    $dirFirmas = realpath(__DIR__ . '/../firmas');
-    if ($dirFirmas === false) {
-      // si no existe, intentar crearlo
-      @mkdir(__DIR__ . '/../firmas', 0775, true);
-      $dirFirmas = realpath(__DIR__ . '/../firmas');
-      if ($dirFirmas === false) {
-        // No se pudo crear
-        $_SESSION['flash_error'] = 'No se pudo crear el directorio de firmas.';
-        header("Location: ruta_asignada_recoleccion.php");
-        exit;
-      }
+
+  // ---- 1) Directorio de firmas
+  $dirFirmas = __DIR__ . '/../firmas';
+  if (!is_dir($dirFirmas)) {
+    @mkdir($dirFirmas, 0775, true);
+  }
+  if (!is_dir($dirFirmas)) {
+    $_SESSION['flash_error'] = 'No se pudo crear el directorio de firmas.';
+    header("Location: ruta_asignada_recoleccion.php");
+    exit;
+  }
+
+  // Guardar firma
+  $firma_data = $_POST['firma_base64'];
+  $firma_data = preg_replace('#^data:image/\w+;base64,#i', '', $firma_data);
+  $firma_bin  = base64_decode(str_replace(' ', '+', $firma_data));
+  $firma_nombre   = 'firmarec_' . $recoleccion_id . '_' . time() . '.png';
+  $firma_path_abs = $dirFirmas . '/' . $firma_nombre;
+  $firma_path_rel = '../firmas/' . $firma_nombre; // CONSISTENTE con lo que ya usas
+  file_put_contents($firma_path_abs, $firma_bin);
+
+  // ---- 2) FOTO del cliente (si viene)
+  $foto_path_rel = null; // por defecto sin foto
+  if (!empty($_POST['foto_cliente'])) {
+    $img = $_POST['foto_cliente'];
+    if (strpos($img, 'base64,') !== false) {
+      $img = explode('base64,', $img, 2)[1];
     }
+    $img = str_replace(' ', '+', $img);
+    $data = base64_decode($img);
 
-    // Guardar firma
-    $firma_data = $_POST['firma_base64'];
-    $firma_data = preg_replace('#^data:image/\w+;base64,#i', '', $firma_data);
-    $firma_bin  = base64_decode(str_replace(' ', '+', $firma_data));
-    $firma_nombre = 'firmarec_' . $recoleccion_id . '_' . time() . '.png';
-    $firma_path_rel = '../firmas/' . $firma_nombre;
-    $firma_path_abs = __DIR__ . '/../firmas/' . $firma_nombre;
-    file_put_contents($firma_path_abs, $firma_bin);
+    if ($data !== false) {
+      $dirFotos = __DIR__ . '/../fotos_pilotos';
+      if (!is_dir($dirFotos)) {
+        @mkdir($dirFotos, 0775, true);
+      }
+      // nombre archivo
+      $rand = function_exists('random_bytes') ? bin2hex(random_bytes(4)) : substr(md5(uniqid('', true)), 0, 8);
+      $foto_nombre   = 'cli_' . (int)$recoleccion_id . '_' . date('Ymd_His') . '_' . $rand . '.jpg';
+      $foto_path_abs = $dirFotos . '/' . $foto_nombre;
+      $foto_path_rel = '../fotos_pilotos/' . $foto_nombre; // MISMA lógica que firma (ruta relativa similar)
 
-    // Solo cerramos FASE 1 (recogida). NO tocar estado_recoleccion_entrega.
+      // guardar archivo
+      if (file_put_contents($foto_path_abs, $data) === false) {
+        error_log('[FOTO] file_put_contents falló: ' . $foto_path_abs);
+        $foto_path_rel = null; // no guardamos ruta si falló
+      }
+    } else {
+      error_log('[FOTO] base64_decode falló');
+    }
+  }
+
+  // ---- 3) UPDATE en una sola sentencia (firma + foto si existe)
+  if ($foto_path_rel) {
+    $sql = "UPDATE recolecciones 
+            SET estado_recoleccion = 'recibido',
+                fecha_recogido = NOW(),
+                firma_rec = ?,
+                foto_cliente = ?
+            WHERE id = ?
+              AND ruta_recoleccion_id IN ($placeholders)
+              AND estado <> 'cancelado'";
+    $params = array_merge([$firma_path_rel, $foto_path_rel, $recoleccion_id], $ruta_ids);
+  } else {
     $sql = "UPDATE recolecciones 
             SET estado_recoleccion = 'recibido',
                 fecha_recogido = NOW(),
                 firma_rec = ?
-            WHERE id = ? 
-              AND ruta_recoleccion_id IN ($placeholders)
-              AND estado <> 'cancelado'";
-    $params = array_merge([$firma_path_rel, $recoleccion_id], $ruta_ids);
-    $stmt = $pdo->prepare($sql);
-    $stmt->execute($params);
-
-    // Opcional: podrías insertar en historial aquí si lo deseas.
-
-  } elseif ($accion === 'cancelado' && !empty($_POST['observacion_cancelacion'])) {
-    $observacion = trim($_POST['observacion_cancelacion']);
-
-    // Cancelar FASE 1
-    $sql = "UPDATE recolecciones 
-            SET estado_recoleccion = 'cancelado',
-                observacion_cancelacion = ?
             WHERE id = ?
               AND ruta_recoleccion_id IN ($placeholders)
               AND estado <> 'cancelado'";
-    $params = array_merge([$observacion, $recoleccion_id], $ruta_ids);
-    $stmt = $pdo->prepare($sql);
-    $stmt->execute($params);
-
-    // El trigger pondrá estado='cancelado'.
-    // Opcional: insertar historial.
-
+    $params = array_merge([$firma_path_rel, $recoleccion_id], $ruta_ids);
   }
+
+  $stmt = $pdo->prepare($sql);
+  $stmt->execute($params);
 
   header("Location: ruta_asignada_recoleccion.php");
   exit;
 }
 
-// $_POST['foto_cliente'] viene en base64 dataURL
-if (!empty($_POST['foto_cliente'])) {
-    $img = $_POST['foto_cliente'];
-
-    // Extraer base64 limpio
-    if (strpos($img, 'base64,') !== false) {
-        $img = explode('base64,', $img, 2)[1];
-    }
-    // A veces vienen espacios reemplazados por '+'
-    $img = str_replace(' ', '+', $img);
-
-    $data = base64_decode($img);
-    if ($data === false) {
-        error_log('[FOTO] base64_decode falló');
-        // Opcional: feedback al usuario
-        // echo json_encode(['error' => 'Imagen inválida']); exit;
-    } else {
-        // Directorio físico donde guardaremos (fuera de /piloto)
-        // __DIR__ = .../piloto
-        $saveDir = __DIR__ . '/../fotos_pilotos';
-
-        if (!is_dir($saveDir)) {
-            if (!mkdir($saveDir, 0755, true)) {
-                error_log('[FOTO] No se pudo crear directorio: ' . $saveDir);
-            }
-        }
-
-        if (!is_writable($saveDir)) {
-            error_log('[FOTO] Directorio no escribible: ' . $saveDir);
-        }
-
-        // Nombre de archivo
-        $fileBase = 'cli_' . (int)$recoleccion_id . '_' . date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . '.jpg';
-        $fsPath   = $saveDir . '/' . $fileBase;         // Ruta en disco (absoluta)
-        $dbPath   = 'fotos_pilotos/' . $fileBase;       // Ruta para BD (relativa al proyecto)
-
-        // Guardar archivo
-        $bytes = file_put_contents($fsPath, $data);
-        if ($bytes === false) {
-            error_log('[FOTO] file_put_contents falló: ' . $fsPath);
-        } else {
-            // Actualiza tu tabla
-            $stmt = $pdo->prepare("UPDATE recolecciones SET foto_cliente = ? WHERE id = ?");
-            $stmt->execute([$dbPath, $recoleccion_id]);
-            // Opcional: verifica filas afectadas
-            if ($stmt->rowCount() === 0) {
-                error_log('[FOTO] UPDATE sin filas afectadas. ID: ' . (int)$recoleccion_id);
-            }
-        }
-    }
 }
 
 
@@ -272,6 +243,7 @@ $recolecciones = $stmt->fetchAll(PDO::FETCH_ASSOC);
           <input type="hidden" name="firma_base64" id="firma_base64">
           <input type="hidden" name="recoleccion_id" id="recoleccion_id_firma">
           <input type="hidden" name="accion" value="recibido">
+          <input type="hidden" name="foto_cliente" id="foto_cliente">
           <small class="text-muted d-block mt-2">Use el mouse o el dedo para firmar.</small>
         </div>
         <div class="modal-footer">
@@ -319,7 +291,8 @@ $recolecciones = $stmt->fetchAll(PDO::FETCH_ASSOC);
       </div>
 
       <div class="modal-footer">
-        <button type="button" id="btnTomar" class="btn btn-primary">Tomar foto</button>
+        <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#modalFotoCliente" data-recoleccion-id="<?= (int)$r['recoleccion_id'] ?>">Tomar foto del paquete</button>
+
         <button type="button" id="btnRepetir" class="btn btn-outline-secondary" style="display:none;">Repetir</button>
         <button type="button" id="btnGuardarFoto" class="btn btn-success" style="display:none;" data-bs-dismiss="modal">Usar esta foto</button>
         <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cerrar</button>
@@ -356,6 +329,8 @@ $recolecciones = $stmt->fetchAll(PDO::FETCH_ASSOC);
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.6/dist/signature_pad.umd.min.js"></script>
+
+<!--FUNCION DE FIRMA-->
 <script>
 
   const canvas = document.getElementById("signatureCanvas");
@@ -402,123 +377,157 @@ $recolecciones = $stmt->fetchAll(PDO::FETCH_ASSOC);
   });
 </script>
 
+<!--TOMAR FOTO-->
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-  let stream = null;
-
+document.addEventListener('DOMContentLoaded', () => {
   const modalEl = document.getElementById('modalFotoCliente');
-  if (!modalEl) {
-    console.warn('No existe #modalFotoCliente en el DOM.');
-    return;
-  }
+  if (!modalEl) return;
 
-  const fotoInput     = document.getElementById('foto_cliente');
+  // Siempre busca elementos DENTRO del modal (evita null y colisiones)
+  const videoEl       = modalEl.querySelector('#camVideo');
   const canvasEl      = document.getElementById('camCanvas');
   const previewWrap   = document.getElementById('previewWrap');
   const previewImg    = document.getElementById('fotoPreview');
-  const btnTomar      = document.getElementById('btnTomar');
-  const btnRepetir    = document.getElementById('btnRepetir');
-  const btnGuardar    = document.getElementById('btnGuardarFoto');
   const fallbackWrap  = document.getElementById('fallbackWrap');
   const fallbackInput = document.getElementById('fallbackInput');
+  const fotoInput     = document.getElementById('foto_cliente');
 
-  function stopStream() {
-    if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+  // Botones (dentro del modal)
+  const btnTomar    = modalEl.querySelector('#btnTomar');
+  const btnRepetir  = modalEl.querySelector('#btnRepetir');
+  const btnGuardar  = modalEl.querySelector('#btnGuardarFoto');
+
+  // Si por alguna razón faltan botones, no reventar
+  function safe(el) { return !!el; }
+
+  let stream = null;
+  function stopStream(){ if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; } if (videoEl) videoEl.srcObject = null; }
+
+  function setShotMode(on){
+    if (safe(btnTomar))   btnTomar.style.display   = on ? 'none' : '';
+    if (safe(btnRepetir)) btnRepetir.style.display = on ? '' : 'none';
+    if (safe(btnGuardar)) btnGuardar.style.display = on ? '' : 'none';
+    if (previewWrap)      previewWrap.style.display = on ? '' : 'none';
   }
-  function setShotMode(hasShot) {
-    btnTomar.style.display    = hasShot ? 'none' : '';
-    btnRepetir.style.display  = hasShot ? '' : 'none';
-    btnGuardar.style.display  = hasShot ? '' : 'none';
-    previewWrap.style.display = hasShot ? '' : 'none';
+
+  // Diagnóstico visible bajo el video
+  let diag = document.getElementById('camDiag');
+  if (!diag && videoEl && videoEl.parentElement && videoEl.parentElement.parentElement) {
+    diag = document.createElement('div');
+    diag.id = 'camDiag';
+    diag.className = 'text-danger small mt-2';
+    videoEl.parentElement.parentElement.appendChild(diag);
+  }
+  function showDiag(txt){ if (diag) diag.textContent = txt || ''; }
+
+  async function pickBestCamera(){
+    const md = navigator.mediaDevices;
+    if (!md || !md.enumerateDevices) return null;
+    const devices = await md.enumerateDevices();
+    const videos = devices.filter(d => d.kind === 'videoinput');
+    if (!videos.length) return null;
+    let backCam = videos.find(v => /back|rear|environment/i.test(v.label));
+    if (!backCam) backCam = videos[videos.length - 1];
+    return { video: { deviceId: { exact: backCam.deviceId } }, audio: false };
   }
 
-  setShotMode(false);
+  async function tryStartCamera(){
+    showDiag('');
+    const tries = [
+      { video: { facingMode: { ideal: 'environment' } }, audio: false },
+      await pickBestCamera(),
+      { video: true, audio: false }
+    ].filter(Boolean);
 
-  // Abrir modal ⇒ iniciar cámara
-  modalEl.addEventListener('shown.bs.modal', async () => {
+    let lastErr = null;
+    for (const c of tries) {
+      try { showDiag('Iniciando cámara...'); return await navigator.mediaDevices.getUserMedia(c); }
+      catch(e){ lastErr = e; console.warn('[getUserMedia] fallo', c, e); }
+    }
+    throw lastErr || new Error('No se pudo iniciar la cámara');
+  }
+
+  function explainError(err){
+    const name = (err && (err.name || err.code)) || '';
+    const msg  = (err && err.message) || '';
+    switch (name) {
+      case 'NotAllowedError':        return 'Permiso de cámara denegado. Permite acceso en el candado del navegador.';
+      case 'NotFoundError':          return 'No se encontró cámara. Verifica que exista una cámara disponible.';
+      case 'NotReadableError':       return 'La cámara está siendo usada por otra app.';
+      case 'OverconstrainedError':   return 'La cámara no cumple con las restricciones solicitadas.';
+      case 'SecurityError':          return 'Bloqueado por seguridad. Usa https o localhost.';
+      default:                       return 'No se pudo iniciar la cámara: ' + (msg || name);
+    }
+  }
+
+  // ====== Eventos del modal ======
+  modalEl.addEventListener('shown.bs.modal', async (ev) => {
     setShotMode(false);
-    previewImg.src = '';
-    if (fotoInput) fotoInput.value = '';
+    if (previewImg) previewImg.src = '';
+    if (fotoInput)  fotoInput.value = '';
 
-    // Toma el <video> dentro del modal (evita null y duplicados)
-    const videoEl = modalEl.querySelector('#camVideo');
-    if (!videoEl) {
-      console.error('No se encontró #camVideo dentro del modal');
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      showDiag('Tu navegador no soporta cámara (getUserMedia).');
+      if (fallbackWrap) fallbackWrap.style.display = '';
       return;
     }
 
     try {
-      stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: 'environment' } },
-        audio: false
-      });
-      videoEl.srcObject = stream;
-      videoEl.play().catch(()=>{});
+      stream = await tryStartCamera();
+      if (videoEl) {
+        videoEl.srcObject = stream;
+        await videoEl.play().catch(()=>{});
+      }
+      showDiag('');
       if (fallbackWrap) fallbackWrap.style.display = 'none';
     } catch (err) {
-      console.warn('No se pudo acceder a la cámara:', err);
+      showDiag(explainError(err));
       if (fallbackWrap) fallbackWrap.style.display = '';
     }
   });
 
-  // Cerrar modal ⇒ detener cámara y limpiar
   modalEl.addEventListener('hidden.bs.modal', () => {
     stopStream();
     setShotMode(false);
-    previewImg.src = '';
+    if (previewImg) previewImg.src = '';
+    showDiag('');
     if (fallbackInput) fallbackInput.value = '';
   });
 
-  // Tomar foto
-  btnTomar.addEventListener('click', () => {
-    const videoEl = modalEl.querySelector('#camVideo');
-    if (stream && videoEl) {
-      const w = videoEl.videoWidth || 1280;
-      const h = videoEl.videoHeight || 720;
-      canvasEl.width = w; canvasEl.height = h;
-      const ctx = canvasEl.getContext('2d');
-      ctx.drawImage(videoEl, 0, 0, w, h);
-      previewImg.src = canvasEl.toDataURL('image/jpeg', 0.9);
-      setShotMode(true);
-    } else {
-      if (fallbackWrap) fallbackWrap.style.display = '';
-      fallbackInput?.click();
-    }
-  });
-
-  // Repetir
-  btnRepetir.addEventListener('click', () => {
-    setShotMode(false);
-    previewImg.src = '';
-  });
-
-  // Guardar
-  btnGuardar.addEventListener('click', () => {
-    if (previewImg.src && previewImg.src.startsWith('data:image')) {
-      if (fotoInput) fotoInput.value = previewImg.src; // base64
-      return; // el modal se cierra por data-bs-dismiss
-    }
-    if (fallbackInput?.files?.[0]) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        if (fotoInput) fotoInput.value = reader.result;
-        bootstrap.Modal.getInstance(modalEl)?.hide();
-      };
-      reader.readAsDataURL(fallbackInput.files[0]);
-    }
-  });
-
-  // Fallback: archivo
-  if (fallbackInput) {
-    fallbackInput.addEventListener('change', () => {
-      const file = fallbackInput.files?.[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = () => {
-        previewImg.src = reader.result;
+  // ====== Botones (agrega listeners solo si existen) ======
+  if (safe(btnTomar)) {
+    btnTomar.addEventListener('click', () => {
+      if (!stream || !videoEl) {
+        showDiag('No hay cámara activa. Cierra y vuelve a abrir el modal o usa el selector de archivo.');
+        if (fallbackWrap) fallbackWrap.style.display = '';
+        fallbackInput?.click();
+        return;
+      }
+      const w = videoEl.videoWidth || 1280, h = videoEl.videoHeight || 720;
+      if (canvasEl) {
+        canvasEl.width = w; canvasEl.height = h;
+        canvasEl.getContext('2d').drawImage(videoEl, 0, 0, w, h);
+        if (previewImg) previewImg.src = canvasEl.toDataURL('image/jpeg', 0.9);
         setShotMode(true);
-      };
-      reader.readAsDataURL(file);
+      }
+    });
+  }
+
+  if (safe(btnRepetir)) {
+    btnRepetir.addEventListener('click', () => { setShotMode(false); if (previewImg) previewImg.src = ''; showDiag(''); });
+  }
+
+  if (safe(btnGuardar)) {
+    btnGuardar.addEventListener('click', () => {
+      if (previewImg && previewImg.src && previewImg.src.startsWith('data:image')) {
+        if (fotoInput) fotoInput.value = previewImg.src; // Copia al form de firma
+        return; // el data-bs-dismiss cierra el modal
+      }
+      if (fallbackInput?.files?.[0]) {
+        const r = new FileReader();
+        r.onload = () => { if (fotoInput) fotoInput.value = r.result; };
+        r.readAsDataURL(fallbackInput.files[0]);
+      }
     });
   }
 });
