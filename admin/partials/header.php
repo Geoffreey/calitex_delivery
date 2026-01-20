@@ -62,18 +62,6 @@
         <span class="text-sm font-medium">Settings</span>
       </a>
   </nav>
-  
-
-
-
-
-
-
-
-
-
-
-
 <!--<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
     <div class="container-fluid">
       <button class="btn btn-outline-light me-2 d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebar" aria-controls="sidebar">
