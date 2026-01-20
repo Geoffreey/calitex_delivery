@@ -5,7 +5,7 @@ $nombre = 'Admin';
 $apellido = 'General';
 $telefono = '12345678';
 $email = 'admin@app.com';
-$password = password_hash('admin123', PASSWORD_DEFAULT);
+$password = password_hash('4Dm12026', PASSWORD_DEFAULT);
 $rol = 'admin';
 
 $stmt = $pdo->prepare("INSERT INTO users (nombre, apellido, telefono, email, password, rol) VALUES (?, ?, ?, ?, ?, ?)");
