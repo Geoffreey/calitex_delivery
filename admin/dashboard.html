@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+        <meta charset="utf-8" />
+        <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+        <title>CaliTex Courier Dashboard</title>
+        <script
+            src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+        <link
+            href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap"
+            rel="stylesheet" />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap"
+            rel="stylesheet" />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+            rel="stylesheet" />
+        <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#1152d4",
+                        "accent-orange": "#f97316",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#101622",
+                    },
+                    fontFamily: {
+                        "display": ["Inter"]
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+        <style>
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+    </head>
+    <body
+        class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen">
+        <div class="flex h-screen overflow-hidden">
+            <!-- Sidebar Navigation -->
+            <aside
+                class="w-64 flex-shrink-0 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col">
+                <div class="p-6">
+                    <div class="flex items-center gap-3">
+                        <div
+                            class="bg-primary size-10 rounded-lg flex items-center justify-center text-white">
+                            <span
+                                class="material-symbols-outlined">local_shipping</span>
+                        </div>
+                        <div class="flex flex-col">
+                            <h1
+                                class="text-slate-900 dark:text-white text-base font-bold leading-tight">CaliTex
+                                Delivery</h1>
+                            <p
+                                class="text-slate-500 text-xs font-medium uppercase tracking-wider">Courier
+                                Portal</p>
+                        </div>
+                    </div>
+                </div>
+                <nav class="flex-1 px-4 space-y-1">
+                    <a
+                        class="flex items-center gap-3 px-3 py-2 rounded-lg bg-primary/10 text-primary"
+                        href="#">
+                        <span class="material-symbols-outlined">dashboard</span>
+                        <span class="text-sm font-semibold">Dashboard</span>
+                    </a>
+                    <a
+                        class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                        href="#">
+                        <span class="material-symbols-outlined">package_2</span>
+                        <span class="text-sm font-medium">My Shipments</span>
+                    </a>
+                    <a
+                        class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                        href="#">
+                        <span class="material-symbols-outlined">contacts</span>
+                        <span class="text-sm font-medium">Address Book</span>
+                    </a>
+                    <a
+                        class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                        href="#">
+                        <span class="material-symbols-outlined">payments</span>
+                        <span class="text-sm font-medium">Billing</span>
+                    </a>
+                    <div
+                        class="pt-4 pb-2 px-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Support</div>
+                    <a
+                        class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                        href="#">
+                        <span class="material-symbols-outlined">help</span>
+                        <span class="text-sm font-medium">Help Center</span>
+                    </a>
+                    <a
+                        class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                        href="#">
+                        <span class="material-symbols-outlined">settings</span>
+                        <span class="text-sm font-medium">Settings</span>
+                    </a>
+                </nav>
+                <div
+                    class="p-4 mt-auto border-t border-slate-200 dark:border-slate-800">
+                    <div class="flex items-center gap-3 px-2">
+                        <div
+                            class="size-8 rounded-full bg-slate-200 dark:bg-slate-700 bg-cover bg-center"
+                            data-alt="User profile avatar circle"
+                            style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBhZ4Deg_bwOqQcP3_-9vyfFmKIWx-m6jdIH9RnyzlS1xHYRuwi63DN2MNUHkMDrtvGFM8JY9zcM8KnOKIFeElwLPa_kpmvZLC3McjobJTgEpDcd3c4-oOFKT2ruwd0ZzTNLbYx6CAnz9KemL14wTcyA8NYEwRPpb4OeNqumZej6B80g0Nh7zHWrjQDgwPUITQIaRmwYwglV8mA-S4-vUoYBbMdYmkuEJdV082n0-WoCbkWvsWIhencE1uhRd4yDSh8YZbmKhLsOmXF");'></div>
+                        <div class="flex-1 overflow-hidden">
+                            <p
+                                class="text-sm font-bold text-slate-900 dark:text-white truncate">Alex
+                                Dispatcher</p>
+                            <p class="text-xs text-slate-500 truncate">HQ
+                                Terminal 4</p>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+            <!-- Main Content Area -->
+            <main
+                class="flex-1 flex flex-col overflow-y-auto bg-background-light dark:bg-background-dark">
+                <!-- Top Navigation Bar -->
+                <header
+                    class="h-16 flex items-center justify-between px-8 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-10">
+                    <div class="flex-1 max-w-xl">
+                        <label class="relative flex items-center w-full">
+                            <span
+                                class="absolute left-3 text-slate-400 material-symbols-outlined">search</span>
+                            <input
+                                class="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-lg py-2 pl-10 pr-4 text-sm placeholder:text-slate-500 focus:ring-2 focus:ring-primary/20"
+                                placeholder="Quick Track: Enter Tracking ID (e.g., CTX-9921)..."
+                                type="text" />
+                        </label>
+                    </div>
+                    <div class="flex items-center gap-4 ml-4">
+                        <button
+                            class="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700">
+                            <span
+                                class="material-symbols-outlined text-[20px]">notifications</span>
+                        </button>
+                        <button
+                            class="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg text-sm font-bold shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all">
+                            <span
+                                class="material-symbols-outlined text-[18px]">add</span>
+                            <span>Create New Shipment</span>
+                        </button>
+                    </div>
+                </header>
+                <div class="p-8 space-y-8">
+                    <!-- Greeting & Stats Section -->
+                    <section>
+                        <div class="mb-6">
+                            <h2
+                                class="text-3xl font-black text-slate-900 dark:text-white tracking-tight">Good
+                                morning, CaliTex Dispatcher</h2>
+                            <p class="text-slate-500 text-base">Here is what's
+                                happening with your fleet today.</p>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <!-- Stat Card 1 -->
+                            <div
+                                class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                                <div
+                                    class="flex items-center justify-between mb-4">
+                                    <div
+                                        class="bg-blue-50 dark:bg-blue-900/30 p-2 rounded-lg text-primary">
+                                        <span
+                                            class="material-symbols-outlined">package_2</span>
+                                    </div>
+                                    <span
+                                        class="text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30 text-xs font-bold px-2 py-1 rounded">+5.2%</span>
+                                </div>
+                                <p
+                                    class="text-slate-500 text-sm font-medium">Active
+                                    Shipments</p>
+                                <h3
+                                    class="text-3xl font-black text-slate-900 dark:text-white mt-1">128</h3>
+                            </div>
+                            <!-- Stat Card 2 -->
+                            <div
+                                class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                                <div
+                                    class="flex items-center justify-between mb-4">
+                                    <div
+                                        class="bg-emerald-50 dark:bg-emerald-900/30 p-2 rounded-lg text-emerald-600">
+                                        <span
+                                            class="material-symbols-outlined">task_alt</span>
+                                    </div>
+                                    <span
+                                        class="text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30 text-xs font-bold px-2 py-1 rounded">+12.4%</span>
+                                </div>
+                                <p
+                                    class="text-slate-500 text-sm font-medium">Delivered
+                                    (Last 24h)</p>
+                                <h3
+                                    class="text-3xl font-black text-slate-900 dark:text-white mt-1">1,402</h3>
+                            </div>
+                            <!-- Stat Card 3 -->
+                            <div
+                                class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm border-l-4 border-l-accent-orange">
+                                <div
+                                    class="flex items-center justify-between mb-4">
+                                    <div
+                                        class="bg-orange-50 dark:bg-orange-900/30 p-2 rounded-lg text-accent-orange">
+                                        <span
+                                            class="material-symbols-outlined">error</span>
+                                    </div>
+                                    <span
+                                        class="text-rose-600 bg-rose-50 dark:bg-rose-900/30 text-xs font-bold px-2 py-1 rounded">-2.1%</span>
+                                </div>
+                                <p
+                                    class="text-slate-500 text-sm font-medium">Pending
+                                    Action</p>
+                                <h3
+                                    class="text-3xl font-black text-slate-900 dark:text-white mt-1">14</h3>
+                            </div>
+                        </div>
+                    </section>
+                    <!-- Data Table Section -->
+                    <section
+                        class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                        <div
+                            class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                            <h3
+                                class="text-lg font-bold text-slate-900 dark:text-white">Recent
+                                Packages</h3>
+                            <div class="flex gap-2">
+                                <button
+                                    class="text-slate-500 hover:text-primary p-2">
+                                    <span
+                                        class="material-symbols-outlined">filter_list</span>
+                                </button>
+                                <button
+                                    class="text-slate-500 hover:text-primary p-2">
+                                    <span
+                                        class="material-symbols-outlined">download</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left">
+                                <thead>
+                                    <tr
+                                        class="bg-slate-50 dark:bg-slate-800/50">
+                                        <th
+                                            class="px-6 py-3 text-xs font-bold text-slate-400 uppercase tracking-wider">Tracking
+                                            ID</th>
+                                        <th
+                                            class="px-6 py-3 text-xs font-bold text-slate-400 uppercase tracking-wider">Destination</th>
+                                        <th
+                                            class="px-6 py-3 text-xs font-bold text-slate-400 uppercase tracking-wider">Status</th>
+                                        <th
+                                            class="px-6 py-3 text-xs font-bold text-slate-400 uppercase tracking-wider">Estimated
+                                            Delivery</th>
+                                        <th
+                                            class="px-6 py-3 text-xs font-bold text-slate-400 uppercase tracking-wider text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody
+                                    class="divide-y divide-slate-100 dark:divide-slate-800">
+                                    <!-- Row 1 -->
+                                    <tr
+                                        class="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+                                        <td
+                                            class="px-6 py-4 font-bold text-primary">#CTX-88291</td>
+                                        <td class="px-6 py-4">
+                                            <div class="flex flex-col">
+                                                <span
+                                                    class="text-sm font-semibold text-slate-900 dark:text-white">Houston,
+                                                    TX</span>
+                                                <span
+                                                    class="text-xs text-slate-500">Regional
+                                                    Distribution Center</span>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            <span
+                                                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400">
+                                                In Transit
+                                            </span>
+                                        </td>
+                                        <td
+                                            class="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">Today,
+                                            4:00 PM</td>
+                                        <td class="px-6 py-4 text-right">
+                                            <button
+                                                class="text-slate-400 hover:text-primary">
+                                                <span
+                                                    class="material-symbols-outlined">more_horiz</span>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <!-- Row 2 -->
+                                    <tr
+                                        class="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+                                        <td
+                                            class="px-6 py-4 font-bold text-primary">#CTX-99021</td>
+                                        <td class="px-6 py-4">
+                                            <div class="flex flex-col">
+                                                <span
+                                                    class="text-sm font-semibold text-slate-900 dark:text-white">San
+                                                    Diego, CA</span>
+                                                <span
+                                                    class="text-xs text-slate-500">Corporate
+                                                    Office - Suite 400</span>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            <span
+                                                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400">
+                                                Pending Pickup
+                                            </span>
+                                        </td>
+                                        <td
+                                            class="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">Oct
+                                            24, 10:30 AM</td>
+                                        <td class="px-6 py-4 text-right">
+                                            <button
+                                                class="text-slate-400 hover:text-primary">
+                                                <span
+                                                    class="material-symbols-outlined">more_horiz</span>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <!-- Row 3 -->
+                                    <tr
+                                        class="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+                                        <td
+                                            class="px-6 py-4 font-bold text-primary">#CTX-77114</td>
+                                        <td class="px-6 py-4">
+                                            <div class="flex flex-col">
+                                                <span
+                                                    class="text-sm font-semibold text-slate-900 dark:text-white">Austin,
+                                                    TX</span>
+                                                <span
+                                                    class="text-xs text-slate-500">Residential
+                                                    Front Porch</span>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            <span
+                                                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400">
+                                                Delivered
+                                            </span>
+                                        </td>
+                                        <td
+                                            class="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">Completed
+                                            (2h ago)</td>
+                                        <td class="px-6 py-4 text-right">
+                                            <button
+                                                class="text-slate-400 hover:text-primary">
+                                                <span
+                                                    class="material-symbols-outlined">more_horiz</span>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <!-- Row 4 -->
+                                    <tr
+                                        class="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+                                        <td
+                                            class="px-6 py-4 font-bold text-primary">#CTX-11209</td>
+                                        <td class="px-6 py-4">
+                                            <div class="flex flex-col">
+                                                <span
+                                                    class="text-sm font-semibold text-slate-900 dark:text-white">Phoenix,
+                                                    AZ</span>
+                                                <span
+                                                    class="text-xs text-slate-500">Terminal
+                                                    Hub 14</span>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            <span
+                                                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-400">
+                                                Delayed
+                                            </span>
+                                        </td>
+                                        <td
+                                            class="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">Oct
+                                            25, 12:00 PM</td>
+                                        <td class="px-6 py-4 text-right">
+                                            <button
+                                                class="text-slate-400 hover:text-primary">
+                                                <span
+                                                    class="material-symbols-outlined">more_horiz</span>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div
+                            class="px-6 py-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/20 text-center">
+                            <button
+                                class="text-primary text-sm font-bold hover:underline">View
+                                All Shipments</button>
+                        </div>
+                    </section>
+                    <!-- Help/Support Banner -->
+                    <section class="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-8">
+                        <div
+                            class="bg-gradient-to-br from-primary to-blue-800 p-8 rounded-xl text-white relative overflow-hidden group">
+                            <div class="relative z-10">
+                                <h4 class="text-xl font-bold mb-2">Need
+                                    logistical support?</h4>
+                                <p
+                                    class="text-blue-100 mb-6 text-sm max-w-sm">Our
+                                    24/7 dispatcher team is ready to assist with
+                                    custom routing or large freight
+                                    scheduling.</p>
+                                <button
+                                    class="bg-white text-primary px-5 py-2 rounded-lg text-sm font-bold hover:bg-blue-50 transition-colors">Chat
+                                    with Support</button>
+                            </div>
+                            <span
+                                class="material-symbols-outlined absolute -right-4 -bottom-4 text-[120px] opacity-10 rotate-12 group-hover:rotate-0 transition-transform">support_agent</span>
+                        </div>
+                        <div
+                            class="bg-white dark:bg-slate-900 p-8 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between">
+                            <div>
+                                <h4
+                                    class="text-xl font-bold text-slate-900 dark:text-white mb-2">Service
+                                    Status</h4>
+                                <div class="flex items-center gap-2 mb-4">
+                                    <div
+                                        class="size-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                                    <span
+                                        class="text-sm font-medium text-emerald-600">All
+                                        networks operational</span>
+                                </div>
+                            </div>
+                            <div class="flex gap-4">
+                                <div
+                                    class="flex-1 border border-slate-100 dark:border-slate-800 p-3 rounded-lg">
+                                    <p
+                                        class="text-[10px] font-bold text-slate-400 uppercase">Ground</p>
+                                    <p
+                                        class="text-sm font-bold text-slate-700 dark:text-slate-300">Fast
+                                        (Avg 48h)</p>
+                                </div>
+                                <div
+                                    class="flex-1 border border-slate-100 dark:border-slate-800 p-3 rounded-lg">
+                                    <p
+                                        class="text-[10px] font-bold text-slate-400 uppercase">Express</p>
+                                    <p
+                                        class="text-sm font-bold text-slate-700 dark:text-slate-300">On
+                                        Time (99%)</p>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </main>
+        </div>
+    </body></html>
