@@ -8,7 +8,7 @@ if (!isset($_SESSION['user_id']) || $_SESSION['rol'] !== 'auxiliar') {
 }
 
 include 'partials/header.php';
-include 'partials/sidebar.php';
+//include 'partials/sidebar.php';
 
 // Obtener rutas
 $rutas = $pdo->query("SELECT id, nombre FROM rutas ORDER BY id DESC")->fetchAll();

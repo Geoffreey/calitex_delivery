@@ -20,7 +20,7 @@ if (!$piloto) {
 $piloto_id = $piloto['id'];
 
 include 'partials/header.php';
-include 'partials/sidebar.php';
+//include 'partials/sidebar.php';
 
 $stmt = $pdo->prepare("SELECT id, nombre FROM rutas WHERE piloto_id = ?");
 $stmt->execute([$piloto_id]);

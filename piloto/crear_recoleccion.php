@@ -224,7 +224,7 @@ $pdo->prepare("
 }
 
 include 'partials/header.php';
-include 'partials/sidebar.php';
+//include 'partials/sidebar.php';
 echo $guia_script;
 ?>
 

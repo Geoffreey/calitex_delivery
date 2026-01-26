@@ -114,7 +114,7 @@ $recolecciones = $pdo->query("
 
 // Ahora sí, incluir parciales (ya no habrá header() después de esto)
 include 'partials/header.php';
-include 'partials/sidebar.php';
+//include 'partials/sidebar.php';
 ?>
 
 <div class="col-lg-10 col-12 p-4">

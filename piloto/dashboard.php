@@ -10,7 +10,7 @@ if (!isset($_SESSION['user_id']) || $_SESSION['rol'] !== 'piloto') {
 $piloto_id = $_SESSION['user_id'];
 
 include 'partials/header.php';
-include 'partials/sidebar.php';
+//include 'partials/sidebar.php';
 
 // Consulta resumen
 $resumen = $pdo->prepare("

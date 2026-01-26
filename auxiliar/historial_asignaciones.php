@@ -37,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ruta_id'], $_POST['pi
 }
 
 include 'partials/header.php';
-include 'partials/sidebar.php';
+//include 'partials/sidebar.php';
 
 // Obtener rutas con asignación
 $stmt = $pdo->query("SELECT * FROM rutas WHERE piloto_id IS NOT NULL ORDER BY fecha_asignacion DESC");

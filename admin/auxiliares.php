@@ -8,7 +8,7 @@ if (!isset($_SESSION['user_id']) || $_SESSION['rol'] !== 'admin') {
 }
 
 include 'partials/header.php';
-include 'partials/sidebar.php';
+//include 'partials/sidebar.php';
 
 $auxiliar = $pdo->query("SELECT a.id, u.nombre, u.apellido, u.telefono, u.email
                          FROM auxiliares a 

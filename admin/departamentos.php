@@ -8,7 +8,7 @@ if (!isset($_SESSION['user_id']) || $_SESSION['rol'] !== 'admin') {
 }
 
 include 'partials/header.php';
-include 'partials/sidebar.php';
+//include 'partials/sidebar.php';
 
 // Obtener todos los departamentos activos
 $query = $pdo->query("SELECT * FROM departamentos ORDER BY nombre ASC");

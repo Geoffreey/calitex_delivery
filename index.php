@@ -75,7 +75,7 @@
                 <form method="post" action="login.php" class="space-y-4">
                     <!-- Campo de correo electrónico -->
                     <div class="flex flex-col gap-2">
-                        <label class="text-[#1c110d] dark:text-white text-sm font-semibold px-1">Correo electronico</label>
+                        <label for="email" class="text-[#1c110d] dark:text-white text-sm font-semibold px-1">Correo electronico</label>
                         <div class="relative group">
                             <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#9c5e49] dark:text-[#e8d5ce] text-xl group-focus-within:text-primary transition-colors">mail</span>
                             <input class="w-full h-14 pl-12 pr-4 rounded-full border border-[#e8d5ce] dark:border-[#422c26] bg-transparent focus:ring-2 focus:ring-primary/20 focus:border-primary text-[#1c110d] dark:text-white placeholder:text-[#9c5e49]/50 transition-all outline-none" name="email" placeholder="name@company.com" type="email" required/>
@@ -84,13 +84,13 @@
                     <!-- Campo de contraseña -->
                     <div class="flex flex-col gap-2">
                         <div class="flex justify-between items-center px-1">
-                            <label class="text-[#1c110d] dark:text-white text-sm font-semibold" name="password" required>Contraña</label>
+                            <label for="password" class="text-[#1c110d] dark:text-white text-sm font-semibold" required>Contraña</label>
                             <a class="text-xs font-semibold text-primary hover:underline" href="#">Reestablecer contraseña?</a>
                         </div>
                         <div class="relative group">
                             <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#9c5e49] dark:text-[#e8d5ce] text-xl group-focus-within:text-primary transition-colors">lock</span>
-                            <input class="w-full h-14 pl-12 pr-12 rounded-full border border-[#e8d5ce] dark:border-[#422c26] bg-transparent focus:ring-2 focus:ring-primary/20 focus:border-primary text-[#1c110d] dark:text-white placeholder:text-[#9c5e49]/50 transition-all outline-none" placeholder="••••••••" type="password" />
-                            <button class="absolute right-4 top-1/2 -translate-y-1/2 text-[#9c5e49] dark:text-[#e8d5ce] hover:text-[#1c110d] transition-colors" type="button">
+                            <input class="w-full h-14 pl-12 pr-12 rounded-full border border-[#e8d5ce] dark:border-[#422c26] bg-transparent focus:ring-2 focus:ring-primary/20 focus:border-primary text-[#1c110d] dark:text-white placeholder:text-[#9c5e49]/50 transition-all outline-none"  name="password" placeholder="••••••••" type="password" />
+                            <button type="submit" class="absolute right-4 top-1/2 -translate-y-1/2 text-[#9c5e49] dark:text-[#e8d5ce] hover:text-[#1c110d] transition-colors" type="button">
                                 <span class="material-symbols-outlined text-xl">visibility</span>
                             </button>
                         </div>

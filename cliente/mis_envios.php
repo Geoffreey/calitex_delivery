@@ -31,7 +31,7 @@ $stmt->execute([$cliente_id]);
 $envios = $stmt->fetchAll();
 
 include 'partials/header.php';
-include 'partials/sidebar.php';
+//include 'partials/sidebar.php';
 ?>
 
 <div class="col-lg-10 col-12 p-4">

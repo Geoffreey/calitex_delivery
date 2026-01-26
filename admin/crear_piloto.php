@@ -85,7 +85,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   if ($errores) {
     // Mostrar errores y no continuar
     include 'partials/header.php';
-    include 'partials/sidebar.php';
+    //include 'partials/sidebar.php';
     echo '<div class="col-lg-10 col-12 p-4">';
     echo '<div class="alert alert-danger"><ul>';
     foreach ($errores as $e) echo '<li>'.htmlspecialchars($e).'</li>';
@@ -161,7 +161,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 include 'partials/header.php';
-include 'partials/sidebar.php';
+//include 'partials/sidebar.php';
 ?>
 
 <div class="col-lg-10 col-12 p-4">

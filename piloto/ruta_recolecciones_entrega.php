@@ -13,7 +13,7 @@ $piloto = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$piloto) {
   include 'partials/header.php';
-  include 'partials/sidebar.php';
+  //include 'partials/sidebar.php';
   echo "<div class='p-4 alert alert-warning'>No tienes un perfil de piloto asignado.</div>";
   include 'partials/footer.php';
   exit;
@@ -22,7 +22,7 @@ if (!$piloto) {
 $piloto_id = (int)$piloto['id'];
 
 include 'partials/header.php';
-include 'partials/sidebar.php';
+//include 'partials/sidebar.php';
 
 /* =======================
    Rutas del piloto

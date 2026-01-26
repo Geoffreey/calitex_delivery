@@ -14,7 +14,7 @@ $piloto = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$piloto) {
   include 'partials/header.php';
-  include 'partials/sidebar.php';
+  //include 'partials/sidebar.php';
   echo "<div class='p-4 alert alert-warning'>No tienes un perfil de piloto asignado aún.</div>";
   include 'partials/footer.php';
   exit;
@@ -143,7 +143,7 @@ $stmt->execute([$piloto_id]);
 $rutas = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 include 'partials/header.php';
-include 'partials/sidebar.php';
+//include 'partials/sidebar.php';
 
 if (empty($rutas)) {
   echo "<div class='p-4 alert alert-warning'>No tienes rutas asignadas aún.</div>";

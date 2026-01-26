@@ -116,7 +116,7 @@ HTML;
 }
 
 include 'partials/header.php';
-include 'partials/sidebar.php';
+//include 'partials/sidebar.php';
 
 // Mostrar alerta si el cliente no tiene direcciones
 

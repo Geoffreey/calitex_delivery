@@ -8,7 +8,7 @@ if (!isset($_SESSION['user_id']) || $_SESSION['rol'] !== 'admin') {
 }
 
 include 'partials/header.php';
-include 'partials/sidebar.php';
+//include 'partials/sidebar.php';
 
 $query = $pdo->query("SELECT * FROM rutas WHERE estado = 1 ORDER BY nombre ASC");
 ?>
