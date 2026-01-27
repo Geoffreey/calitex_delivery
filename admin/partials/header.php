@@ -51,6 +51,21 @@
             .sidebar-mobile-hidden { transform: translateX(-100%); }
             .sidebar-mobile-visible { transform: translateX(0); }
         }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+
+        /* Por defecto: móvil VISTA PILOTOS */
+        .desktop-only { display: none !important; }
+        .mobile-only { display: block !important; }
+
+        /* >= 768px: escritorio VISTA PILOTOS*/
+        @media (min-width: 915px) {
+            .desktop-only { display: block !important; }
+            .mobile-only { display: none !important; }
+        }
     </style>
 </head>
 
@@ -67,7 +82,7 @@
         </div>
       </div>
       <nav class="flex-1 px-4 space-y-1 overflow-y-auto">
-        <a class="nav-item flex items-center gap-3 px-3 py-2 rounded-lg bg-primary/10 text-primary" href="#">
+        <a class="nav-item flex items-center gap-3 px-3 py-2 rounded-lg bg-primary/10 text-primary" href="dashboard.php">
           <span class="material-symbols-outlined flex-shrink-0">dashboard</span>
           <span class="text-sm font-semibold nav-text">Dashboard</span>
         </a>
