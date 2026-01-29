@@ -49,11 +49,11 @@ $paquetes = $pdo->query("SELECT id, nombre, tamano, peso, tarifa FROM paquetes O
 $guia_script = "";
 
 $es_crear_envio =
-  ($_SERVER['REQUEST_METHOD'] === 'POST')
-  && !empty($_POST['cliente_id'])
-  && !empty($_POST['direccion_destino_id'])
-  && !empty($_POST['nombre_destinatario'])
-  && !empty($_POST['telefono_destinatario']);
+    ($_SERVER['REQUEST_METHOD'] === 'POST')
+    && !empty($_POST['cliente_id'])
+    && !empty($_POST['direccion_destino_id'])
+    && !empty($_POST['nombre_destinatario'])
+    && !empty($_POST['telefono_destinatario']);
 
 if ($es_crear_envio) {
     $direccion_destino_id = $_POST['direccion_destino_id'];
@@ -198,29 +198,29 @@ echo $guia_script;
                     <p class="block text-sm font-semibold text-[#0d121b] dark:text-gray-200 mb-4">¿Quién paga el envío?</p>
                     <div class="flex gap-4">
                         <label class="flex-1 cursor-pointer group">
-                            <input checked="" class="hidden peer" name="payment" type="radio" value="sender" />
+                            <input name="pago_envio" checked="" class="hidden peer" type="radio" value="cliente" />
                             <div class="flex items-center justify-center gap-2 py-3 px-4 rounded-lg border-2 border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 peer-checked:border-primary peer-checked:bg-primary/5 transition-all">
                                 <span class="material-symbols-outlined text-gray-400 peer-checked:text-primary">upload</span>
-                                <span class="font-medium text-gray-700 dark:text-gray-300 peer-checked:text-primary">Sender</span>
+                                <span class="font-medium text-gray-700 dark:text-gray-300 peer-checked:text-primary">Remitente</span>
                             </div>
                         </label>
                         <label class="flex-1 cursor-pointer group">
-                            <input class="hidden peer" name="payment" type="radio" value="recipient" />
+                            <input name="pago_envio" class="hidden peer" type="radio" value="destinatario" />
                             <div class="flex items-center justify-center gap-2 py-3 px-4 rounded-lg border-2 border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 peer-checked:border-primary peer-checked:bg-primary/5 transition-all">
                                 <span class="material-symbols-outlined text-gray-400 peer-checked:text-primary">download</span>
-                                <span class="font-medium text-gray-700 dark:text-gray-300 peer-checked:text-primary">Recipient</span>
+                                <span class="font-medium text-gray-700 dark:text-gray-300 peer-checked:text-primary">Destinatario</span>
                             </div>
                         </label>
                     </div>
                 </div>
                 <div>
                     <label class="block text-sm font-semibold text-[#0d121b] dark:text-gray-200 mb-2">Observaciones especiales</label>
-                    <textarea class="w-full px-4 py-3 rounded-lg border border-[#cfd7e7] dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-primary focus:border-primary text-sm resize-none" placeholder="Fragile items, specific delivery hours, gate codes..." rows="4"></textarea>
+                    <textarea name="descripcion" class="w-full px-4 py-3 rounded-lg border border-[#cfd7e7] dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-primary focus:border-primary text-sm resize-none" placeholder="Fragile items, specific delivery hours, gate codes..." rows="4"></textarea>
                 </div>
             </div>
         </section>
     </div>
-    <!-- Right Column: Package Details -->
+    <!-- Columna derecha - selección de paquetes -->
     <div class="lg:col-span-5 flex flex-col gap-6">
         <section class="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-[#e7ebf3] dark:border-gray-800 p-6 h-fit">
             <div class="flex items-center justify-between mb-6 border-b border-gray-100 dark:border-gray-800 pb-4">
@@ -228,87 +228,101 @@ echo $guia_script;
                     <span class="material-symbols-outlined text-primary">inventory_2</span>
                     <h2 class="text-[#0d121b] dark:text-white text-xl font-bold">Detalles del Paquete</h2>
                 </div>
-                <span class="bg-primary/10 text-primary text-xs font-bold px-2.5 py-1 rounded-full">3 Items</span>
+                <span id="itemsBadge" class="bg-primary/10 text-primary text-xs font-bold px-2.5 py-1 rounded-full">0 Items</span>
             </div>
-            <div class="space-y-4 mb-6">
-                <!-- Dynamic Item Row 1 -->
-                <div class="p-4 rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30 flex flex-col gap-4">
-                    <div class="flex justify-between items-start">
-                        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Item #1</p>
-                        <button class="text-gray-400 hover:text-red-500 transition-colors" type="button">
-                            <span class="material-symbols-outlined text-[20px]">delete</span>
-                        </button>
-                    </div>
-                    <div class="grid grid-cols-12 gap-3">
-                        <div class="col-span-12">
-                            <select class="custom-select-arrow w-full py-2 px-3 rounded-lg border border-[#cfd7e7] dark:border-gray-700 bg-white dark:bg-gray-800 text-sm focus:ring-primary">
-                                <option>Standard Box (Medium)</option>
-                                <option>Document Envelope</option>
-                                <option>Large Crate</option>
-                                <option>Pallet</option>
-                            </select>
-                        </div>
-                        <div class="col-span-6">
-                            <label class="text-[11px] font-bold text-gray-500 block mb-1">QTY</label>
-                            <input class="w-full py-2 px-3 rounded-lg border border-[#cfd7e7] dark:border-gray-700 bg-white dark:bg-gray-800 text-sm focus:ring-primary" type="number" value="1" />
-                        </div>
-                        <div class="col-span-6">
-                            <label class="text-[11px] font-bold text-gray-500 block mb-1">Weight (kg)</label>
-                            <input class="w-full py-2 px-3 rounded-lg border border-[#cfd7e7] dark:border-gray-700 bg-white dark:bg-gray-800 text-sm focus:ring-primary" type="number" value="2.5" />
-                        </div>
-                    </div>
-                </div>
-                <!-- Dynamic Item Row 2 (Minimal) -->
-                <div class="p-4 rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30 flex flex-col gap-4">
-                    <div class="flex justify-between items-start">
-                        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Item #2</p>
-                        <button class="text-gray-400 hover:text-red-500 transition-colors" type="button">
-                            <span class="material-symbols-outlined text-[20px]">delete</span>
-                        </button>
-                    </div>
-                    <div class="grid grid-cols-12 gap-3">
-                        <div class="col-span-12">
-                            <select class="custom-select-arrow w-full py-2 px-3 rounded-lg border border-[#cfd7e7] dark:border-gray-700 bg-white dark:bg-gray-800 text-sm focus:ring-primary">
-                                <option>Document Envelope</option>
-                                <option>Standard Box</option>
-                            </select>
-                        </div>
-                        <div class="col-span-6">
-                            <input class="w-full py-2 px-3 rounded-lg border border-[#cfd7e7] dark:border-gray-700 bg-white dark:bg-gray-800 text-sm focus:ring-primary" placeholder="Qty" type="number" value="3" />
-                        </div>
-                        <div class="col-span-6">
-                            <input class="w-full py-2 px-3 rounded-lg border border-[#cfd7e7] dark:border-gray-700 bg-white dark:bg-gray-800 text-sm focus:ring-primary" placeholder="Weight" type="number" value="0.5" />
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <button class="w-full py-3 px-4 rounded-lg border-2 border-dashed border-accent/40 text-accent font-bold hover:bg-accent/5 transition-all flex items-center justify-center gap-2" type="button">
+
+            <div id="itemsContainer" class="space-y-4 mb-6"></div>
+
+            <button id="btnAddItem"
+                class="w-full py-3 px-4 rounded-lg border-2 border-dashed border-accent/40 text-accent font-bold hover:bg-accent/5 transition-all flex items-center justify-center gap-2"
+                type="button">
                 <span class="material-symbols-outlined">add</span>
                 Add New Package
             </button>
+
             <div class="mt-8 pt-6 border-t border-gray-100 dark:border-gray-800 space-y-3">
                 <div class="flex justify-between text-sm">
-                    <span class="text-gray-500 dark:text-gray-400">Total Weight:</span>
-                    <span class="font-bold text-[#0d121b] dark:text-white">4.0 kg</span>
+                    <span class="text-gray-500 dark:text-gray-400">Peso Total:</span>
+                    <span class="font-bold text-[#0d121b] dark:text-white"><span id="totalWeight">0.00</span> LB</span>
                 </div>
                 <div class="flex justify-between text-sm">
-                    <span class="text-gray-500 dark:text-gray-400">Est. Shipping Fee:</span>
-                    <span class="font-bold text-[#0d121b] dark:text-white">$12.50</span>
+                    <span class="text-gray-500 dark:text-gray-400">costo de envío:</span>
+                    <span class="font-bold text-[#0d121b] dark:text-white">Q <span id="totalFee">0.00</span></span>
                 </div>
                 <div class="flex justify-between text-lg pt-2">
                     <span class="font-bold text-[#0d121b] dark:text-white">Total Amount:</span>
-                    <span class="font-black text-primary">$12.50</span>
+                    <span class="font-black text-primary">Q <span id="totalAmount">0.00</span></span>
                 </div>
             </div>
+
             <div class="mt-8 grid grid-cols-1 gap-3">
-                <button class="w-full bg-primary text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center justify-center gap-2" type="submit">
+                <button
+                    class="w-full bg-primary text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center justify-center gap-2"
+                    type="submit">
                     <span class="material-symbols-outlined">local_shipping</span>
-                    Crear Guia
+                    Crear Guía
                 </button>
-                <button class="w-full bg-transparent text-gray-500 dark:text-gray-400 py-3 rounded-lg font-semibold text-sm hover:text-gray-700 dark:hover:text-gray-200 transition-colors" type="button">
+
+                <button class="w-full bg-transparent text-gray-500 dark:text-gray-400 py-3 rounded-lg font-semibold text-sm hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+                    type="button">
                     Guardar como borrador
                 </button>
             </div>
+
+            <!-- Template oculto para clonar items -->
+            <template id="itemTemplate">
+                <div class="itemCard p-4 rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30 flex flex-col gap-4">
+                    <div class="flex justify-between items-start">
+                        <p class="itemTitle text-xs font-bold text-gray-400 uppercase tracking-wider">Item #1</p>
+                        <button class="btnDelete text-gray-400 hover:text-red-500 transition-colors" type="button">
+                            <span class="material-symbols-outlined text-[20px]">delete</span>
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-12 gap-3">
+                        <div class="col-span-12">
+                            <select class="pkgSelect custom-select-arrow w-full py-2 px-3 rounded-lg border border-[#cfd7e7] dark:border-gray-700 bg-white dark:bg-gray-800 text-sm focus:ring-primary">
+                                <option value="">Seleccione un paquete</option>
+                                <?php foreach ($paquetes as $p): ?>
+                                    <option
+                                        value="<?= (int)$p['id'] ?>"
+                                        data-tarifa="<?= htmlspecialchars($p['tarifa']) ?>"
+                                        data-peso="<?= htmlspecialchars($p['peso']) ?>">
+                                        <?= htmlspecialchars("{$p['nombre']} - {$p['tamano']} ({$p['peso']} kg) - Q{$p['tarifa']}") ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+
+                        <div class="col-span-4">
+                            <label class="text-[11px] font-bold text-gray-500 block mb-1">QTY</label>
+                            <input class="qtyInput w-full py-2 px-3 rounded-lg border border-[#cfd7e7] dark:border-gray-700 bg-white dark:bg-gray-800 text-sm focus:ring-primary"
+                                type="number" min="0" value="1" />
+                        </div>
+
+                        <div class="col-span-4">
+                            <label class="text-[11px] font-bold text-gray-500 block mb-1">Cobro (Q)</label>
+                            <input class="cobroInput w-full py-2 px-3 rounded-lg border border-[#cfd7e7] dark:border-gray-700 bg-white dark:bg-gray-800 text-sm focus:ring-primary"
+                                type="number" min="0" step="0.01" value="0" />
+                        </div>
+
+                        <div class="col-span-4">
+                            <label class="text-[11px] font-bold text-gray-500 block mb-1">Peso (kg)</label>
+                            <input class="pesoInput w-full py-2 px-3 rounded-lg border border-[#cfd7e7] dark:border-gray-700 bg-white dark:bg-gray-800 text-sm focus:ring-primary"
+                                type="number" min="0" step="0.01" value="0" />
+                        </div>
+
+                        <!-- Inputs REALES para backend (se llenan por JS) -->
+                        <input type="hidden" class="hiddenPkgName" />
+                        <input type="hidden" class="hiddenCobroName" />
+                    </div>
+
+                    <div class="flex justify-between text-sm pt-2 border-t border-gray-200/70 dark:border-gray-700">
+                        <span class="text-gray-500">Subtotal item:</span>
+                        <span class="font-bold text-[#0d121b] dark:text-white">Q <span class="itemSubtotal">0.00</span></span>
+                    </div>
+                </div>
+            </template>
         </section>
         <!-- Help Card -->
         <div class="bg-primary/5 dark:bg-primary/10 rounded-xl p-5 border border-primary/20 flex gap-4">
@@ -320,3 +334,4 @@ echo $guia_script;
         </div>
     </div>
 </form>
+<script src="partials/js/envio-paquetes.js"></script>
