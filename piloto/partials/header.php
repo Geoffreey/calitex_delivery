@@ -166,3 +166,7 @@
           </button>
         </div>
       </header>
+      <div class="mb-8">
+        <h1 class="text-[#0d121b] dark:text-white text-3xl md:text-4xl font-black leading-tight tracking-[-0.033em]">Crear Nuevo Envio</h1>
+        <p class="text-[#4c669a] dark:text-gray-400 text-base font-normal mt-2">Genere una guía digital y programe una recolección.</p>
+      </div>
