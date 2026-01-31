@@ -1,10 +1,7 @@
 <?php
 session_start();
 require_once '../config/db.php';
-
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
+define('BASE_PATH', realpath(__DIR__ . '/..')); 
 
 if (!isset($_SESSION['user_id']) || ($_SESSION['rol'] ?? '') !== 'piloto') {
   header("Location: ../login.php");
@@ -13,19 +10,29 @@ if (!isset($_SESSION['user_id']) || ($_SESSION['rol'] ?? '') !== 'piloto') {
 
 $user_id = (int)$_SESSION['user_id'];
 
-// Obtener piloto_id real
+// piloto_id real
 $stmt = $pdo->prepare("SELECT id FROM pilotos WHERE user_id = ? LIMIT 1");
 $stmt->execute([$user_id]);
 $piloto_id = (int)$stmt->fetchColumn();
 
 if (!$piloto_id) {
   include 'partials/header.php';
-  echo "<div class='alert alert-danger m-4'>No se encontró piloto asociado a este usuario.</div>";
+  echo "<div class='p-4'><div class='bg-red-50 text-red-700 border border-red-200 rounded-lg p-4'>No se encontró piloto asociado a este usuario.</div></div>";
   include 'partials/footer.php';
   exit;
 }
 
-include 'partials/header.php';
+// filtro por tab (pendiente|recibido|cancelado|all)
+$tab = $_GET['tab'] ?? 'all';
+$tab = in_array($tab, ['all','pendiente','recibido','cancelado'], true) ? $tab : 'all';
+
+$whereEstado = "";
+$params = [$piloto_id];
+
+if ($tab !== 'all') {
+  $whereEstado = " AND e.estado_envio = ? ";
+  $params[] = $tab;
+}
 
 $query = $pdo->prepare("
   SELECT e.*,
@@ -64,93 +71,86 @@ $query = $pdo->prepare("
   LEFT JOIN departamentos dpto_d ON ddes.departamento_id = dpto_d.id
 
   WHERE e.piloto_id = ?
+  {$whereEstado}
   ORDER BY e.created_at DESC
 ");
-$query->execute([$piloto_id]);
+$query->execute($params);
 $envios = $query->fetchAll(PDO::FETCH_ASSOC);
 
-// Helpers (PHP 7)
-function estado_badge_class($estado) {
+// Contadores para tabs
+$stCount = $pdo->prepare("
+  SELECT 
+    SUM(CASE WHEN estado_envio='pendiente' THEN 1 ELSE 0 END) AS pendientes,
+    SUM(CASE WHEN estado_envio='recibido' THEN 1 ELSE 0 END) AS recibidos,
+    SUM(CASE WHEN estado_envio='cancelado' THEN 1 ELSE 0 END) AS cancelados,
+    COUNT(*) AS total
+  FROM envios
+  WHERE piloto_id = ?
+");
+$stCount->execute([$piloto_id]);
+$counts = $stCount->fetch(PDO::FETCH_ASSOC) ?: ['pendientes'=>0,'recibidos'=>0,'cancelados'=>0,'total'=>0];
+
+$pilot_name = trim(($_SESSION['nombre'] ?? '') . ' ' . ($_SESSION['apellido'] ?? ''));
+
+// Helpers view
+function estado_ui($estado) {
+  // devuelve [label, dotClass, pillClass] para tu plantilla Tailwind
   switch ($estado) {
-    case 'pendiente': return 'secondary';
-    case 'recibido':  return 'success';
-    case 'cancelado': return 'danger';
-    default:          return 'light';
+    case 'recibido':
+      return ['Recibido', 'bg-green-500', 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'];
+    case 'cancelado':
+      return ['Cancelado', 'bg-red-500', 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'];
+    case 'pendiente':
+    default:
+      return ['Pendiente', 'bg-amber-500', 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'];
   }
 }
 
-function estado_label($estado) {
+$pilot_name = trim(($_SESSION['nombre'] ?? '') . ' ' . ($_SESSION['apellido'] ?? ''));
+
+if (!isset($counts)) {
+  $counts = [
+    'total' => count($envios),
+    'pendientes' => 0,
+    'recibidos' => 0,
+    'cancelados' => 0,
+  ];
+  foreach ($envios as $e) {
+    if ($e['estado_envio'] === 'pendiente') $counts['pendientes']++;
+    if ($e['estado_envio'] === 'recibido')  $counts['recibidos']++;
+    if ($e['estado_envio'] === 'cancelado') $counts['cancelados']++;
+  }
+}
+
+function estado_pill_class($estado) {
   switch ($estado) {
-    case 'pendiente': return 'Pendiente';
-    case 'recibido':  return 'Recibido';
+    case 'recibido':
+      return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400';
+    case 'cancelado':
+      return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400';
+    case 'pendiente':
+    default:
+      return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400';
+  }
+}
+
+function estado_dot_class($estado) {
+  switch ($estado) {
+    case 'recibido': return 'bg-green-500';
+    case 'cancelado': return 'bg-red-500';
+    case 'pendiente':
+    default: return 'bg-amber-500';
+  }
+}
+
+function estado_label_ui($estado) {
+  switch ($estado) {
+    case 'recibido': return 'Recibido';
     case 'cancelado': return 'Cancelado';
-    default:          return ucfirst($estado);
+    case 'pendiente':
+    default: return 'Pendiente';
   }
 }
-?>
 
-<div class="col-lg-10 col-12 p-4">
-  <h2 class="mb-3">Mis Envíos Asignados</h2>
 
-  <div class="table-responsive">
-    <table class="table table-bordered table-striped align-middle">
-      <thead class="table-light">
-        <tr>
-          <th>#</th>
-          <th>Cliente</th>
-          <th>Destinatario</th>
-          <th>Origen</th>
-          <th>Destino</th>
-          <th>Pago</th>
-          <th>Estado</th>
-          <th>Fecha</th>
-          <th style="min-width: 210px;">Acción</th>
-        </tr>
-      </thead>
-      <tbody>
-        <?php if (empty($envios)): ?>
-          <tr>
-            <td colspan="9" class="text-center text-muted py-4">No hay envíos asignados.</td>
-          </tr>
-        <?php else: ?>
-          <?php foreach ($envios as $e): ?>
-            <tr>
-              <td><?= (int)$e['id'] ?></td>
-              <td><?= htmlspecialchars(trim($e['cliente_nombre'].' '.$e['cliente_apellido'])) ?></td>
-              <td>
-                <div><strong><?= htmlspecialchars($e['nombre_destinatario']) ?></strong></div>
-                <div class="text-muted"><?= htmlspecialchars($e['telefono_destinatario']) ?></div>
-              </td>
-              <td><?= htmlspecialchars($e['origen_direccion'] ?: '—') ?></td>
-              <td><?= htmlspecialchars($e['destino_direccion'] ?: '—') ?></td>
-              <td><?= ($e['pago_envio'] === 'destinatario') ? 'Destinatario' : 'Cliente' ?></td>
-              <td>
-                <span class="badge bg-<?= estado_badge_class($e['estado_envio']) ?>">
-                  <?= estado_label($e['estado_envio']) ?>
-                </span>
-              </td>
-              <td><?= date('d/m/Y H:i', strtotime($e['created_at'])) ?></td>
-              <td>
-                <?php if ($e['estado_envio'] !== 'recibido' && $e['estado_envio'] !== 'cancelado'): ?>
-                  <form method="POST" action="actualizar_estado.php" class="d-inline">
-                    <input type="hidden" name="envio_id" value="<?= (int)$e['id'] ?>">
-                    <select name="nuevo_estado" class="form-select form-select-sm d-inline w-auto" required>
-                      <option value="pendiente" <?= $e['estado_envio']==='pendiente' ? 'selected' : '' ?>>Pendiente</option>
-                      <option value="recibido">Recibido</option>
-                      <option value="cancelado">Cancelado</option>
-                    </select>
-                    <button type="submit" class="btn btn-sm btn-primary">Actualizar</button>
-                  </form>
-                <?php else: ?>
-                  <span class="text-muted">—</span>
-                <?php endif; ?>
-              </td>
-            </tr>
-          <?php endforeach; ?>
-        <?php endif; ?>
-      </tbody>
-    </table>
-  </div>
-</div>
-
-<?php include 'partials/footer.php'; ?>
+require_once '../views/piloto/paquetes_asignados.view.php';

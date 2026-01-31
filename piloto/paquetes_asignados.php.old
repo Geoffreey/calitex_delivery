@@ -1,0 +1,66 @@
+
+<div class="col-lg-10 col-12 p-4">
+  <h2 class="mb-3">Mis Envíos Asignados</h2>
+
+  <div class="table-responsive">
+    <table class="table table-bordered table-striped align-middle">
+      <thead class="table-light">
+        <tr>
+          <th>#</th>
+          <th>Cliente</th>
+          <th>Destinatario</th>
+          <th>Origen</th>
+          <th>Destino</th>
+          <th>Pago</th>
+          <th>Estado</th>
+          <th>Fecha</th>
+          <th style="min-width: 210px;">Acción</th>
+        </tr>
+      </thead>
+      <tbody>
+        <?php if (empty($envios)): ?>
+          <tr>
+            <td colspan="9" class="text-center text-muted py-4">No hay envíos asignados.</td>
+          </tr>
+        <?php else: ?>
+          <?php foreach ($envios as $e): ?>
+            <tr>
+              <td><?= (int)$e['id'] ?></td>
+              <td><?= htmlspecialchars(trim($e['cliente_nombre'].' '.$e['cliente_apellido'])) ?></td>
+              <td>
+                <div><strong><?= htmlspecialchars($e['nombre_destinatario']) ?></strong></div>
+                <div class="text-muted"><?= htmlspecialchars($e['telefono_destinatario']) ?></div>
+              </td>
+              <td><?= htmlspecialchars($e['origen_direccion'] ?: '—') ?></td>
+              <td><?= htmlspecialchars($e['destino_direccion'] ?: '—') ?></td>
+              <td><?= ($e['pago_envio'] === 'destinatario') ? 'Destinatario' : 'Cliente' ?></td>
+              <td>
+                <span class="badge bg-<?= estado_badge_class($e['estado_envio']) ?>">
+                  <?= estado_label($e['estado_envio']) ?>
+                </span>
+              </td>
+              <td><?= date('d/m/Y H:i', strtotime($e['created_at'])) ?></td>
+              <td>
+                <?php if ($e['estado_envio'] !== 'recibido' && $e['estado_envio'] !== 'cancelado'): ?>
+                  <form method="POST" action="actualizar_estado.php" class="d-inline">
+                    <input type="hidden" name="envio_id" value="<?= (int)$e['id'] ?>">
+                    <select name="nuevo_estado" class="form-select form-select-sm d-inline w-auto" required>
+                      <option value="pendiente" <?= $e['estado_envio']==='pendiente' ? 'selected' : '' ?>>Pendiente</option>
+                      <option value="recibido">Recibido</option>
+                      <option value="cancelado">Cancelado</option>
+                    </select>
+                    <button type="submit" class="btn btn-sm btn-primary">Actualizar</button>
+                  </form>
+                <?php else: ?>
+                  <span class="text-muted">—</span>
+                <?php endif; ?>
+              </td>
+            </tr>
+          <?php endforeach; ?>
+        <?php endif; ?>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<?php include 'partials/footer.php'; ?>
