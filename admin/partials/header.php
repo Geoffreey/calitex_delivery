@@ -148,9 +148,9 @@
         </div>
         <div class="flex items-center justify-between w-full lg:w-auto gap-4">
           <div class="flex items-center gap-2">
-            <button class="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700">
+            <!--<button class="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700">
               <span class="material-symbols-outlined text-[20px]">Notoficaciones</span>
-            </button>
+            </button>-->
             <button class="hidden lg:block p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700" onclick="document.getElementById('sidebar').classList.toggle('sidebar-collapsed')">
               <span class="material-symbols-outlined text-[20px]">menu_open</span>
             </button>

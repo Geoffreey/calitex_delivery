@@ -10,4 +10,8 @@ try {
 } catch (PDOException $se) {
     die("Error en la conexión: " . $se->getMessage());
 }
+
+define('BASE_URL', '/calitex_delivery'); // local
+// en producción sería '' o '/'
+
 ?>
