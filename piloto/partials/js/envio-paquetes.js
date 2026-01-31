@@ -1,3 +1,6 @@
+window.__ENVIO_PKGS_LOADED = true;
+console.log("✅ envio-paquetes.js cargó");
+
 (function () {
   const container = document.getElementById('itemsContainer');
   const tpl = document.getElementById('itemTemplate');
@@ -16,11 +19,11 @@
 
   const payerRadios = document.querySelectorAll('input[name="pago_envio"]');
 
-  function getPayer() {
-    const checked = document.querySelector('input[name="pago_envio"]:checked');
-    // ✅ tus values reales
-    return checked ? checked.value : 'cliente';
-  }
+function getPayer() {
+  const checked = document.querySelector('input[name="pago_envio"]:checked');
+  return checked ? checked.value : 'cliente';
+}
+
 
   payerRadios.forEach(r => r.addEventListener('change', recalcAll));
 
@@ -90,61 +93,105 @@
   }
 
   function recalcAll() {
-    const cards = [...container.querySelectorAll('.itemCard')];
+  const cards = [...container.querySelectorAll('.itemCard')];
+  const payer = getPayer(); // "cliente" o "destinatario" (según tu HTML)
 
-    const agg = {};
-    cards.forEach(card => {
-      const r = calcCard(card);
-      if (!r.pkgId) return;
+  // 1) Recolectar data por card y pintar subtotal por card (respetando payer)
+  const agg = {}; // pkgId -> {qty, cobro, tarifa, pesoTotal}
+  cards.forEach(card => {
+    const select = card.querySelector('.pkgSelect');
+    const pkgId = select.value;
 
-      if (!agg[r.pkgId]) {
-        agg[r.pkgId] = { qty: 0, cobro: 0, tarifa: r.tarifa, pesoTotal: 0, shippingTotal: 0 };
-      }
+    const qty = Number(card.querySelector('.qtyInput').value || 0);
+    const cobro = Number(card.querySelector('.cobroInput').value || 0);
 
-      agg[r.pkgId].qty += r.qty;
-      agg[r.pkgId].cobro += r.cobro;
-      agg[r.pkgId].tarifa = r.tarifa;
-      agg[r.pkgId].pesoTotal += (r.peso * r.qty);
-      agg[r.pkgId].shippingTotal += r.shipping;
-    });
+    const opt = select.options[select.selectedIndex];
+    const tarifa = opt ? Number(opt.dataset.tarifa || 0) : 0;
 
-    // Normalizar hidden inputs (solo 1 por paquete)
-    const firstById = {};
-    cards.forEach(card => {
-      const select = card.querySelector('.pkgSelect');
-      const pkgId = select ? select.value : '';
-      const hiddenPkg = card.querySelector('.hiddenPkgName');
-      const hiddenCobro = card.querySelector('.hiddenCobroName');
+    // peso auto
+    const pesoInput = card.querySelector('.pesoInput');
+    const pesoOpt = opt ? Number(opt.dataset.peso || 0) : 0;
+    const pesoVal = Number(pesoInput.value || 0);
+    if (pesoVal === 0 && pesoOpt > 0) pesoInput.value = pesoOpt;
 
-      if (!pkgId) return;
+    const peso = Number(pesoInput.value || 0);
 
-      if (!firstById[pkgId]) {
-        firstById[pkgId] = true;
-        if (hiddenPkg) hiddenPkg.value = agg[pkgId].qty;
-        if (hiddenCobro) hiddenCobro.value = agg[pkgId].cobro;
-        syncHiddenNames(card);
-      } else {
-        hiddenPkg?.removeAttribute('name');
-        hiddenCobro?.removeAttribute('name');
-      }
-    });
+    // ✅ subtotal visual por item: cobro + (tarifa*qty solo si paga destinatario)
+    const shippingItem = (payer === 'destinatario') ? (qty * tarifa) : 0;
+    const subtotalItem = cobro + shippingItem;
 
-    let totalAmount = 0;
-    let totalFee = 0;
-    let totalWeight = 0;
+    card.querySelector('.itemSubtotal').textContent = money(subtotalItem);
 
-    Object.values(agg).forEach(x => {
-      totalFee += x.shippingTotal;
-      totalAmount += x.shippingTotal + x.cobro;
-      totalWeight += x.pesoTotal;
-    });
+    // hidden values (siempre)
+    const hiddenPkg = card.querySelector('.hiddenPkgName');
+    const hiddenCobro = card.querySelector('.hiddenCobroName');
+    hiddenPkg.value = qty;
+    hiddenCobro.value = cobro;
 
-    totalAmountEl.textContent = money(totalAmount);
-    totalFeeEl.textContent = money(totalFee);
-    totalWeightEl.textContent = money(totalWeight);
+    // nombres de hidden (solo si hay pkg)
+    if (!pkgId) {
+      hiddenPkg.removeAttribute('name');
+      hiddenCobro.removeAttribute('name');
+      return;
+    } else {
+      hiddenPkg.name = `paquete_ids[${pkgId}]`;
+      hiddenCobro.name = `monto_cobros[${pkgId}]`;
+    }
 
-    renumberItems();
-  }
+    // agregación por paquete (para backend)
+    if (!agg[pkgId]) agg[pkgId] = { qty: 0, cobro: 0, tarifa: tarifa, pesoTotal: 0 };
+    agg[pkgId].qty += qty;
+    agg[pkgId].cobro += cobro;
+    agg[pkgId].tarifa = tarifa; // por si cambia
+    agg[pkgId].pesoTotal += (peso * qty);
+  });
+
+  // 2) Dejar solo 1 hidden por paquete activo (evita duplicados al POST)
+  const firstById = {};
+  cards.forEach(card => {
+    const pkgId = card.querySelector('.pkgSelect').value;
+    if (!pkgId) return;
+
+    const hiddenPkg = card.querySelector('.hiddenPkgName');
+    const hiddenCobro = card.querySelector('.hiddenCobroName');
+
+    if (!firstById[pkgId]) {
+      firstById[pkgId] = true;
+
+      // ✅ set agregados SOLO en el primer card de ese paquete
+      hiddenPkg.value = agg[pkgId].qty;
+      hiddenCobro.value = agg[pkgId].cobro;
+
+      hiddenPkg.name = `paquete_ids[${pkgId}]`;
+      hiddenCobro.name = `monto_cobros[${pkgId}]`;
+    } else {
+      // desactivar duplicados
+      hiddenPkg.removeAttribute('name');
+      hiddenCobro.removeAttribute('name');
+    }
+  });
+
+  // 3) Totales
+  let totalFee = 0;
+  let totalAmount = 0;
+  let totalWeight = 0;
+
+  Object.values(agg).forEach(x => {
+    const shipping = (payer === 'destinatario') ? (x.qty * x.tarifa) : 0;
+    const extras = x.cobro;
+
+    totalFee += shipping;
+    totalAmount += (shipping + extras);
+    totalWeight += x.pesoTotal;
+  });
+
+  totalAmountEl.textContent = money(totalAmount);
+  totalFeeEl.textContent = money(totalFee);
+  totalWeightEl.textContent = money(totalWeight);
+
+  renumberItems();
+}
+
 
   function addItem(prefill = {}) {
     const node = tpl.content.cloneNode(true);
@@ -196,3 +243,149 @@
     });
   }
 })();
+
+//modal guia 
+document.addEventListener('DOMContentLoaded', () => {
+  const overlay = document.getElementById('modalGuiaOverlay');
+  const btnClose = document.getElementById('btnCerrarGuia');
+
+  if (btnClose && overlay) {
+    btnClose.addEventListener('click', () => overlay.classList.add('hidden'));
+  }
+
+  // cerrar al hacer click en el fondo oscuro
+  if (overlay) {
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) overlay.classList.add('hidden');
+    });
+  }
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+  const overlay = document.getElementById('modalGuiaOverlay');
+  const panel   = document.getElementById('modalGuiaPanel');
+  const btnX    = document.getElementById('btnCerrarGuia');
+
+  function closeGuia() {
+    if (overlay) overlay.classList.add('hidden');
+  }
+
+  if (btnX) btnX.addEventListener('click', closeGuia);
+
+  // Cerrar si se clickea fuera del panel
+  if (overlay && panel) {
+    overlay.addEventListener('click', (e) => {
+      if (!panel.contains(e.target)) closeGuia();
+    });
+  }
+
+  // Bonus: cerrar con ESC
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && overlay && !overlay.classList.contains('hidden')) {
+      closeGuia();
+    }
+  });
+});
+
+
+//Imprimir guia
+/**
+ * Construye el texto de la guía en formato "ticket" (monospace).
+ * NO usa innerHTML para evitar links/estilos raros.
+ */
+function buildGuiaText() {
+  const id        = (document.getElementById('modalGuiaId')?.textContent || '').trim();
+  const nombre    = (document.getElementById('modalGuiaNombre')?.textContent || '').trim();
+  const telefono  = (document.getElementById('modalGuiaTelefono')?.textContent || '').trim();
+  const direccion = (document.getElementById('modalGuiaDireccion')?.textContent || '').trim();
+  const desc      = (document.getElementById('modalGuiaDescripcion')?.textContent || '').trim();
+  const pago      = (document.getElementById('modalGuiaPagoEnvio')?.textContent || '').trim();
+  const cobro     = (document.getElementById('modalGuiaCobro')?.textContent || '').trim();
+
+  return `
+----------------------------------------
+          📨 GUÍA DE ENTREGA - ENVÍO
+----------------------------------------
+No. de Guía: ${id}
+Nombre: ${nombre}
+Teléfono: ${telefono}
+Dirección: ${direccion}
+Descripción: ${desc}
+Forma de pago del envío: ${pago}
+Cobro total al cliente: ${cobro}
+
+📦 ¡Gracias por usar nuestro servicio!
+----------------------------------------
+`.trim();
+}
+
+/**
+ * Escapa texto para meterlo dentro de <pre> sin que el navegador lo interprete como HTML.
+ */
+function escapeHtml(s) {
+  return String(s)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;');
+}
+
+/**
+ * Imprime SOLO el ticket (texto plano).
+ * No imprime el modal bonito, ni botones, ni estilos del dashboard.
+ */
+function imprimirGuiaTicket() {
+  const text = buildGuiaText();
+
+  const win = window.open('', '_blank');
+  if (!win) return;
+
+  win.document.open();
+  win.document.write(`
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Guía de Envío</title>
+  <style>
+    @page { size: A4 portrait; margin: 10mm; }
+    body { margin: 0; padding: 0; }
+    pre  { font-family: monospace; font-size: 11px; line-height: 1.4; white-space: pre-wrap; }
+    a { display:none !important; } /* por si el navegador intenta auto-link */
+  </style>
+</head>
+<body>
+  <pre>${escapeHtml(text)}</pre>
+</body>
+</html>
+  `);
+  win.document.close();
+
+  win.focus();
+  win.print();
+  win.close();
+}
+
+/**
+ * Conecta botones del modal (Imprimir / Descargar PDF).
+ * OJO: estos IDs deben existir en tu modal_guia.php:
+ * - btnImprimirGuia
+ * - btnDescargarPdf
+ */
+document.addEventListener('DOMContentLoaded', () => {
+  const btnPrint = document.getElementById('btnImprimirGuia');
+  if (btnPrint) btnPrint.addEventListener('click', imprimirGuiaTicket);
+
+  const btnPdf = document.getElementById('btnDescargarPdf');
+  if (btnPdf) {
+    btnPdf.addEventListener('click', () => {
+      // El envio_id lo tenemos en el span modalGuiaId
+      const envioId = (document.getElementById('modalGuiaId')?.textContent || '').trim();
+      if (!envioId) return alert('No se encontró el No. de guía.');
+
+      // Descarga PDF REAL desde endpoint (TCPDF)
+      // BASE_URL debe existir en PHP (ya lo definiste)
+      window.open(`${window.BASE_URL || ''}/piloto/guia_pdf.php?id=${encodeURIComponent(envioId)}`, '_blank');
+    });
+  }
+});
+

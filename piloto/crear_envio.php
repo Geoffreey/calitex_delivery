@@ -1,6 +1,10 @@
 <?php
 session_start();
 require_once '../config/db.php';
+define('BASE_PATH', realpath(__DIR__ . '/..')); 
+// __DIR__ = /calitex_delivery/piloto
+// BASE_PATH = /calitex_delivery
+
 
 if (!isset($_SESSION['user_id']) || $_SESSION['rol'] !== 'piloto') {
   header("Location: ../login.php");
@@ -108,6 +112,13 @@ if ($es_crear_envio) {
 
     $pdo->commit();
 
+    // ✅ Guardamos el ID en sesión solo para mostrar una vez (flash)
+    $_SESSION['guia_envio_id'] = $envio_id;
+
+    // ✅ Redirigimos a GET para evitar duplicados al refrescar
+    header("Location: crear_envio.php?guia=1");
+    exit;
+
     // Datos para la vista/modal (sin concatenar script gigante)
     $guia_data = [
       'envio_id' => $envio_id,
@@ -123,6 +134,82 @@ if ($es_crear_envio) {
     $pdo->rollBack();
     $errors[] = "Error al crear envío: " . $e->getMessage();
   }
+}
+
+$guia_data = null;
+
+if (isset($_GET['guia']) && $_GET['guia'] == '1' && !empty($_SESSION['guia_envio_id'])) {
+
+    $envio_id_flash = (int) $_SESSION['guia_envio_id'];
+
+    // ✅ importantísimo: que se muestre SOLO una vez
+    unset($_SESSION['guia_envio_id']);
+
+    // Traer datos reales del envío
+    $stmt = $pdo->prepare("
+        SELECT 
+            e.id,
+            e.nombre_destinatario,
+            e.telefono_destinatario,
+            e.descripcion,
+            e.pago_envio,
+            d.calle, d.numero,
+            z.numero AS zona,
+            m.nombre AS municipio,
+            dp.nombre AS departamento
+        FROM envios e
+        LEFT JOIN direcciones d ON d.id = e.direccion_destino_id
+        LEFT JOIN zona z ON z.id = d.zona_id
+        LEFT JOIN municipios m ON m.id = d.municipio_id
+        LEFT JOIN departamentos dp ON dp.id = d.departamento_id
+        WHERE e.id = ?
+        LIMIT 1
+    ");
+    $stmt->execute([$envio_id_flash]);
+    $e = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($e) {
+        $direccion_texto = trim("{$e['calle']} #{$e['numero']}, Zona {$e['zona']}, {$e['municipio']}, {$e['departamento']}");
+
+        // Calcular cobro total (mismos criterios que antes)
+        $stmt = $pdo->prepare("
+            SELECT 
+              ep.paquete_id,
+              COUNT(*) AS qty,
+              SUM(ep.monto_cobro) AS extras,
+              MAX(p.tarifa) AS tarifa
+            FROM envios_paquetes ep
+            JOIN paquetes p ON p.id = ep.paquete_id
+            WHERE ep.envio_id = ?
+            GROUP BY ep.paquete_id
+        ");
+        $stmt->execute([$envio_id_flash]);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $totalExtras = 0.0;
+        $totalTarifa = 0.0;
+
+        foreach ($rows as $r) {
+            $qty = (int)$r['qty'];
+            $totalExtras += (float)$r['extras'];
+            $totalTarifa += $qty * (float)$r['tarifa'];
+        }
+
+        $total_cobro = $totalExtras;
+        if ($e['pago_envio'] === 'destinatario') {
+            $total_cobro += $totalTarifa;
+        }
+
+        $guia_data = [
+            'envio_id' => $e['id'],
+            'nombre' => $e['nombre_destinatario'],
+            'telefono' => $e['telefono_destinatario'],
+            'direccion' => $direccion_texto,
+            'descripcion' => $e['descripcion'] ?? '',
+            'pago_texto' => ($e['pago_envio'] === 'destinatario') ? 'Cobro contra entrega' : 'Cobro a mi cuenta',
+            'cobro_total' => number_format($total_cobro, 2, '.', '')
+        ];
+    }
 }
 
 require_once '../views/piloto/crear_envio.view.php';
