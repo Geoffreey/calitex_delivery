@@ -11,7 +11,16 @@ if (!isset($_SESSION['user_id']) || $_SESSION['rol'] !== 'piloto') {
   exit;
 }
 
-$piloto_id = (int)$_SESSION['user_id'];
+$user_id = (int)$_SESSION['user_id'];
+
+$stmt = $pdo->prepare("SELECT id FROM pilotos WHERE user_id = ? LIMIT 1");
+$stmt->execute([$user_id]);
+$piloto_id = (int)$stmt->fetchColumn();
+
+if (!$piloto_id) {
+  die("Error: este usuario no tiene registro en la tabla pilotos.");
+}
+
 
 $clientes = $pdo->query("
   SELECT c.id AS cliente_id, u.nombre
