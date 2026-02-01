@@ -2,7 +2,9 @@
 <div id="modalFoto" class="fixed inset-0 z-[999] hidden">
   <div class="absolute inset-0 bg-black/60" onclick="closeFotoModal()"></div>
 
-  <div class="relative mx-auto mt-10 w-[95%] max-w-xl rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl">
+  <!-- SOLO: max-h + overflow + flex -->
+  <div class="relative mx-auto mt-10 w-[95%] max-w-xl rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl
+              max-h-[92vh] overflow-hidden flex flex-col">
     <div class="p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
       <h3 class="text-lg font-black text-slate-900 dark:text-white">Foto de entrega</h3>
       <button class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800" onclick="closeFotoModal()" type="button">
@@ -10,7 +12,8 @@
       </button>
     </div>
 
-    <div class="p-5 space-y-4">
+    <!-- SOLO: overflow-y + pb para que el botón no quede tapado -->
+    <div class="p-5 pb-24 space-y-4 overflow-y-auto overscroll-contain">
       <p class="text-sm text-slate-500 dark:text-slate-400">
         Tomá una foto del paquete entregado (o evidencia).
       </p>
@@ -18,7 +21,10 @@
       <input id="fotoInput" type="file" accept="image/*" capture="environment"
              class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-primary file:text-white file:font-bold">
 
-      <img id="fotoPreview" class="hidden w-full rounded-xl border border-slate-200 dark:border-slate-800" alt="preview">
+      <!-- SOLO: limitar preview en móvil -->
+      <img id="fotoPreview"
+           class="hidden w-full rounded-xl border border-slate-200 dark:border-slate-800 max-h-[45vh] object-contain"
+           alt="preview">
 
       <form id="formEntregar" method="POST" action="entregar_envio.php" class="space-y-3">
         <input type="hidden" name="envio_id" id="envioIdInput">
