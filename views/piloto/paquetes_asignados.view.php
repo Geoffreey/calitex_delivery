@@ -122,10 +122,13 @@
 
                                 <td class="px-6 py-4 whitespace-nowrap text-right">
                                     <div class="flex items-center justify-end gap-2">
-                                        <a href="ver_envio.php?id=<?= (int)$e['id'] ?>"
-                                            class="px-3 py-1.5 text-xs font-bold text-primary border border-primary rounded hover:bg-primary hover:text-white transition-colors">
+                                        <button
+                                            type="button"
+                                            class="px-3 py-1.5 text-xs font-bold text-primary border border-primary rounded hover:bg-primary hover:text-white transition-colors btnVerGuia"
+                                            data-envio-id="<?= (int)$e['id'] ?>">
                                             Ver
-                                        </a>
+                                        </button>
+
 
                                         <?php if (($e['estado_envio'] ?? '') !== 'recibido' && ($e['estado_envio'] ?? '') !== 'cancelado'): ?>
                                             <button
@@ -236,10 +239,15 @@
         </div>
 
     </div>
+    <script>
+  window.APP_BASE_URL = <?= json_encode(BASE_URL) ?>;
+</script>
+
     <?php include BASE_PATH . '/piloto/partials/piloto/modal_firma.php'; ?>
     <?php include BASE_PATH . '/piloto/partials/piloto/modal_foto.php'; ?>
     <?php include BASE_PATH . '/piloto/partials/piloto/help_card.php'; ?>
-
+    <?php include __DIR__ . '/../../piloto/partials/piloto/modal_guia.php'; ?>
+    <script src="<?= BASE_URL ?>/piloto/partials/js/guia.js?v=<?= time(); ?>"></script>
     <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
     <script src="<?= BASE_URL ?>/piloto/partials/js/firma-foto.js?v=<?= time(); ?>"></script>
 

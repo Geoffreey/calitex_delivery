@@ -29,7 +29,7 @@
           <div class="flex-1 text-center sm:text-left">
             <p class="text-primary text-xs font-bold uppercase tracking-widest mb-1">DETALLES DE LA GUÍA</p>
             <p class="text-[#0d121b] dark:text-white text-2xl font-extrabold leading-tight">No. de Guía: <span id="modalGuiaId"></span></p>
-            <p class="text-[#4c669a] dark:text-gray-400 text-sm mt-1">Generada el <?= date('d \d\e F, Y'); ?></p>
+            <p class="text-[#4c669a] dark:text-gray-400 text-sm mt-1">Generada el <span id="modalGuiaFecha">—</span></p>
           </div>
         </div>
 
@@ -84,17 +84,51 @@
 
       <!-- Action Footer -->
       <footer class="no-print bg-gray-50 dark:bg-[#1e273a] p-6 border-t border-[#e7ebf3] dark:border-[#2d3748] flex flex-col sm:flex-row gap-3">
-        <button type="button" id="btnDescargarPdf" class="flex-1 flex items-center justify-center gap-2 h-12 bg-primary text-white rounded-lg font-bold hover:bg-primary/90 transition-all shadow-lg shadow-primary/20">
+        <button type="button" id="btnDescargarPdf"
+          class="flex-1 flex items-center justify-center gap-2 h-12 bg-primary text-white rounded-lg font-bold hover:bg-primary/90 transition-all shadow-lg shadow-primary/20">
           <span class="material-symbols-outlined">download</span>
           Descargar PDF
         </button>
 
-        <button type="button" id="btnImprimirGuia" class="flex-1 flex items-center justify-center gap-2 h-12 bg-white dark:bg-[#2d3748] text-[#0d121b] dark:text-white border border-[#cfd7e7] dark:border-[#4a5568] rounded-lg font-bold hover:bg-gray-100 dark:hover:bg-[#38445a] transition-all">
+        <button type="button" id="btnImprimirGuia"
+          class="flex-1 flex items-center justify-center gap-2 h-12 bg-white dark:bg-[#2d3748] text-[#0d121b] dark:text-white border border-[#cfd7e7] dark:border-[#4a5568] rounded-lg font-bold hover:bg-gray-100 dark:hover:bg-[#38445a] transition-all">
           <span class="material-symbols-outlined">print</span>
           Imprimir
         </button>
+
+        <button type="button" id="btnVerFirma"
+          class="flex-1 flex items-center justify-center gap-2 h-12 bg-white dark:bg-[#2d3748] text-[#0d121b] dark:text-white border border-[#cfd7e7] dark:border-[#4a5568] rounded-lg font-bold hover:bg-gray-100 dark:hover:bg-[#38445a] transition-all hidden">
+          <span class="material-symbols-outlined">draw</span>
+          Ver firma
+        </button>
+
+        <button type="button" id="btnVerFoto"
+          class="flex-1 flex items-center justify-center gap-2 h-12 bg-white dark:bg-[#2d3748] text-[#0d121b] dark:text-white border border-[#cfd7e7] dark:border-[#4a5568] rounded-lg font-bold hover:bg-gray-100 dark:hover:bg-[#38445a] transition-all hidden">
+          <span class="material-symbols-outlined">photo_camera</span>
+          Ver foto
+        </button>
       </footer>
+
 
     </div>
   </div>
-</div>
+
+  <!-- Modal Preview (Firma / Foto) -->
+  <div id="modalPreviewOverlay" class="hidden fixed inset-0 z-[60]">
+    <div class="absolute inset-0 bg-black/60"></div>
+
+    <div class="relative z-10 h-full w-full flex items-center justify-center p-4">
+      <div class="w-full max-w-3xl bg-white dark:bg-[#101622] rounded-xl overflow-hidden shadow-2xl">
+        <div class="flex items-center justify-between p-3 border-b border-[#e7ebf3] dark:border-[#2d3748]">
+          <h3 id="previewTitle" class="font-bold text-[#0d121b] dark:text-white">Vista</h3>
+          <button type="button" id="btnCerrarPreview" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-[#1e273a]">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </div>
+
+        <div class="p-4">
+          <img id="previewImg" src="" alt="preview" class="w-full max-h-[75vh] object-contain rounded-lg border border-[#e7ebf3] dark:border-[#2d3748]">
+        </div>
+      </div>
+    </div>
+  </div>
