@@ -210,9 +210,9 @@
                         </div>
 
                         <div class="p-4 bg-slate-50 dark:bg-slate-800/40 grid grid-cols-2 gap-3">
-                            <a href="ver_envio.php?id=<?= (int)$e['id'] ?>" class="flex items-center justify-center py-3 text-sm font-bold text-primary border border-primary rounded-lg">
-                                Ver
-                            </a>
+                            <button type="button" class="px-3 py-1.5 text-xs font-bold text-primary border border-primary rounded hover:bg-primary hover:text-white transition-colors btnVerGuia" data-envio-id="<?= (int)$e['id'] ?>">
+                                 Ver
+                            </button>
 
                             <?php if ($estado !== 'recibido' && $estado !== 'cancelado'): ?>
                                 <button
