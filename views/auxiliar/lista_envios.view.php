@@ -241,7 +241,7 @@
                                 <button
                                     type="button"
                                     onclick="openFirmaModal(<?= (int)$e['id'] ?>)"
-                                    class="px-3 py-1.5 text-xs font-bold bg-green-600 text-white rounded hover:bg-green-700 shadow-sm transition-colors">
+                                    class="px-3 py-1.5 text-xs font-bold bg-green-600 text-white border rounded hover:bg-green-700 shadow-sm hover:text-white transition-colors transition-colors">
                                     Recibido
                                 </button>
 
