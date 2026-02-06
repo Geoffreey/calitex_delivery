@@ -95,7 +95,7 @@ function badge_estado_envio($estado)
                     <span class="text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30 text-xs font-bold px-2 py-1 rounded">+12.4%</span>
                 </div>
                 <p class="text-slate-500 text-sm font-medium">Tareas Finalizadas</p>
-                <h3 class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mt-1"><?= $estados['Recibido'] ?></h3>
+                <h3 class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mt-1"><?= $estados['recibido'] ?></h3>
             </div>
             <div class="bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm border-l-4 border-l-accent-orange hover:border-accent-orange/30 transition-colors sm:col-span-2 lg:col-span-1">
                 <div class="flex items-center justify-between mb-4">
@@ -235,11 +235,12 @@ function badge_estado_envio($estado)
         </div>
     </section>
 </div>
+
 <script>
   window.APP_BASE_URL = <?= json_encode(BASE_URL) ?>;
 </script>
 
-    <?php include BASE_PATH . '/auxiliar/partials/auxiliar/modal_firma.php'; ?>
+   <?php include BASE_PATH . '/auxiliar/partials/auxiliar/modal_firma.php'; ?>
     <?php include BASE_PATH . '/auxiliar/partials/auxiliar/modal_foto.php'; ?>
     <?php include BASE_PATH . '/auxiliar/partials/auxiliar/help_card.php'; ?>
     <?php include __DIR__ . '/../../auxiliar/partials/auxiliar/modal_guia.php'; ?>

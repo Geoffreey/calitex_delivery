@@ -1,4 +1,4 @@
-<?php include BASE_PATH . '/piloto/partials/header.php'; ?>
+<?php include BASE_PATH . '/admin/partials/header.php'; ?>
 <!-- PageHeading -->
 <div class="flex-1 px-4 sm:px-8 py-6 lg:py-8">
     <div class="mb-8">
@@ -243,12 +243,12 @@
   window.APP_BASE_URL = <?= json_encode(BASE_URL) ?>;
 </script>
 
-    <?php include BASE_PATH . '/piloto/partials/piloto/modal_firma.php'; ?>
-    <?php include BASE_PATH . '/piloto/partials/piloto/modal_foto.php'; ?>
-    <?php include BASE_PATH . '/piloto/partials/piloto/help_card.php'; ?>
-    <?php include __DIR__ . '/../../piloto/partials/piloto/modal_guia.php'; ?>
-    <script src="<?= BASE_URL ?>/piloto/partials/js/guia.js?v=<?= time(); ?>"></script>
+    <?php include BASE_PATH . '/admin/partials/admin/modal_firma.php'; ?>
+    <?php include BASE_PATH . '/admion/partials/admin/modal_foto.php'; ?>
+    <?php include BASE_PATH . '/adminm/partials/admin/help_card.php'; ?>
+    <?php include __DIR__ . '/../../admin/partials/admin/modal_guia.php'; ?>
+    <script src="<?= BASE_URL ?>/admin/partials/js/guia.js?v=<?= time(); ?>"></script>
     <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
-    <script src="<?= BASE_URL ?>/piloto/partials/js/firma-foto.js?v=<?= time(); ?>"></script>
+    <script src="<?= BASE_URL ?>/admin/partials/js/firma-foto.js?v=<?= time(); ?>"></script>
 
-    <?php include BASE_PATH . '/piloto/partials/footer.php'; ?>
+    <?php include BASE_PATH . '/admin/partials/footer.php'; ?>

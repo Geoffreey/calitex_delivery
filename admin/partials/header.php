@@ -17,6 +17,7 @@
           colors: {
             "primary": "#1152d4",
             "accent-orange": "#f97316",
+            "accent-red": "#ef4444",
             "background-light": "#f6f6f8",
             "background-dark": "#101622",
           },
@@ -97,6 +98,10 @@
         <a class="nav-item flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" href="clientes.php">
           <span class="material-symbols-outlined flex-shrink-0">person</span>
           <span class="text-sm font-medium nav-text">Clientes</span>
+        </a>
+        <a class="nav-item flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" href="lista_envios.php">
+          <span class="material-symbols-outlined flex-shrink-0">package_2</span>
+          <span class="text-sm font-medium nav-text">Envios</span>
         </a>
         <a class="nav-item flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" href="paquetes.php">
           <span class="material-symbols-outlined flex-shrink-0">package_2</span>

@@ -1,4 +1,4 @@
-<?php include BASE_PATH . '/piloto/partials/header.php'; ?>
+<?php include BASE_PATH . '/admin/partials/header.php'; ?>
 <!-- CONTENIDO DE LA PÁGINA -->
 <div class="flex-1 px-4 sm:px-8 py-6 lg:py-8">
   <div class="mb-8 mt-2">
@@ -11,19 +11,19 @@
   </div>
   <form method="POST" id="form-envio" class="grid grid-cols-1 lg:grid-cols-12 gap-8">
     <div class="lg:col-span-7 flex flex-col gap-6">
-      <?php include BASE_PATH . '/piloto/partials/piloto/form_cliente_receptor.php'; ?>
-      <?php include BASE_PATH . '/piloto/partials/piloto/form_logica_envio.php'; ?>
+      <?php include BASE_PATH . '/admin/partials/admin/form_cliente_receptor.php'; ?>
+      <?php include BASE_PATH . '/admino/partials/admin/form_logica_envio.php'; ?>
     </div>
 
     <div class="lg:col-span-5 flex flex-col gap-6">
-      <?php include BASE_PATH . '/piloto/partials/piloto/form_paquetes.php'; ?>
-      <?php include BASE_PATH . '/piloto/partials/piloto/help_card.php'; ?>
+      <?php include BASE_PATH . '/admin/partials/admin/form_paquetes.php'; ?>
+      <?php include BASE_PATH . '/admin/partials/admin/help_card.php'; ?>
     </div>
   </form>
 
-  <?php include BASE_PATH . '/piloto/partials/piloto/modal_guia.php'; ?>
+  <?php include BASE_PATH . '/admin/partials/admin/modal_guia.php'; ?>
 
-  <script src="<?= BASE_URL ?>/piloto/partials/js/envio-paquetes.js?v=<?= time(); ?>"></script>
+  <script src="<?= BASE_URL ?>/admin/partials/js/envio-paquetes.js?v=<?= time(); ?>"></script>
   <script>
     window.BASE_URL = <?= json_encode(BASE_URL) ?>;
   </script>
@@ -49,4 +49,4 @@
   <?php endif; ?>
 
 
-  <?php include BASE_PATH . '/piloto/partials/footer.php'; ?>
+  <?php include BASE_PATH . '/admin/partials/footer.php'; ?>

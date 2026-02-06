@@ -3,7 +3,7 @@ session_start();
 require_once '../config/db.php';
 define('BASE_PATH', realpath(__DIR__ . '/..'));
 
-if (!isset($_SESSION['user_id']) || ($_SESSION['rol'] ?? '') !== 'auxiliar') {
+if (!isset($_SESSION['user_id']) || ($_SESSION['rol'] ?? '') !== 'admin') {
   header("Location: ../login.php");
   exit;
 }
@@ -117,4 +117,4 @@ function estado_label_ui($estado) {
   }
 }
 
-require_once '../views/auxiliar/lista_envios.view.php';
+require_once '../views/admin/lista_envios.view.php';
