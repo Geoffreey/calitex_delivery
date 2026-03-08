@@ -1,8 +1,8 @@
 <?php 
-$host = 'localhost';
+$host = 'db';
 $db = 'systccbx_flydelivery';
-$user = 'root';
-$pass = '';
+$user = 'pos_flydelivery_user';
+$pass = 'pos_flydelivery_pass';
 
 try {
     $pdo = new PDO("mysql:host=$host;dbname=$db;charset=utf8", $user, $pass);

@@ -1,7 +1,7 @@
 <?php
 session_start();
 require_once '../config/db.php';
-define('BASE_PATH', realpath(__DIR__ . '/..')); 
+define('BASE_PATH', realpath(__DIR__ . '/..'));
 
 if (!isset($_SESSION['user_id']) || ($_SESSION['rol'] ?? '') !== 'piloto') {
   header("Location: ../login.php");

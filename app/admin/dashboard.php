@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once '../config/db.php';
+define('BASE_PATH', realpath(__DIR__ . '/..'));
 
 if (!isset($_SESSION['user_id']) || $_SESSION['rol'] !== 'admin') {
     header("Location: ../login.php");
@@ -243,9 +244,9 @@ function badge_estado_envio($estado)
    <?php include BASE_PATH . '/admin/partials/admin/modal_firma.php'; ?>
     <?php include BASE_PATH . '/admin/partials/admin/modal_foto.php'; ?>
     <?php include BASE_PATH . '/admin/partials/admin/help_card.php'; ?>
-    <?php include __DIR__ . '/../../admin/partials/admin/modal_guia.php'; ?>
+    <?php include BASE_PATH . '/admin/partials/admin/modal_guia.php'; ?>
     <script src="<?= BASE_URL ?>/admin/partials/js/guia.js?v=<?= time(); ?>"></script>
     <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
     <script src="<?= BASE_URL ?>/admin/partials/js/firma-foto.js?v=<?= time(); ?>"></script>
 
-<?php include 'partials/footer.php'; ?>
+<?php include BASE_PATH . '/partials/footer.php'; ?>

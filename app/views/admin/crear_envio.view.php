@@ -49,4 +49,4 @@
   <?php endif; ?>
 
 
-  <?php include BASE_PATH . '/admin/partials/footer.php'; ?>
+  <?php include BASE_PATH . '/partials/footer.php'; ?>

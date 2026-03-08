@@ -1,0 +1,5 @@
+app/config.php
+docker/apache.conf
+Dockerfile
+*.sql
+storage/backups/
