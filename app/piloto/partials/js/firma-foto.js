@@ -5,21 +5,51 @@ let currentEnvioId = null;
   const modalFoto  = document.getElementById('modalFoto');
   const canvas = document.getElementById('firmaCanvas');
 
+  function openRecibidoFlow(envioId) {
+    if (REQUIERE_FIRMA_RECIBIDO) {
+      openFirmaModal(envioId);
+    } else {
+      openFotoModal(envioId);
+    }
+  }
+
   function openFirmaModal(envioId){
+    if (!modalFirma) return;
+
     currentEnvioId = envioId;
-    document.getElementById('envioIdInput').value = envioId;
+
+    const envioInput = document.getElementById('envioIdInput');
+    if (envioInput) {
+      envioInput.value = envioId;
+    }
 
     modalFirma.classList.remove('hidden');
 
-    // Ajustar canvas a tamaño real
+    //Ajusta tamaño del canvas para evitar que se vea borroso en pantallas retina
     setTimeout(() => {
+      if (!canvas) return;
+
       const ratio = Math.max(window.devicePixelRatio || 1, 1);
       canvas.width = canvas.offsetWidth * ratio;
       canvas.height = canvas.offsetHeight * ratio;
       canvas.getContext("2d").scale(ratio, ratio);
 
       signaturePad = new SignaturePad(canvas, { minWidth: 1, maxWidth: 2 });
-    }, 50);
+    },  50);
+  }
+
+  // Si no se requiere firma, o después de firmar, se abre el modal de foto
+  function openFotoModal(envioId){
+    if (!modalFoto) return;
+
+    currentEnvioId = envioId;
+
+    const envioInput = document.getElementById('envioIdInput');
+    if (envioInput) {
+      envioInput.value = envioId;
+    }
+
+    modalFoto.classList.remove('hidden');
   }
 
   function closeFirmaModal(){
@@ -34,15 +64,26 @@ let currentEnvioId = null;
   }
 
   function goFotoModal(){
+    if (!REQUIERE_FIRMA_RECIBIDO) {
+      if (modalFirma) modalFirma.classList.add('hidden');
+      if (modalFoto) modalFoto.classList.remove('hidden');
+      return;
+    }
+
     if (!signaturePad || signaturePad.isEmpty()){
       alert("La firma es obligatoria.");
       return;
     }
-    const firmaBase64 = signaturePad.toDataURL("image/png");
-    document.getElementById('firmaBase64Input').value = firmaBase64;
 
-    modalFirma.classList.add('hidden');
-    modalFoto.classList.remove('hidden');
+    const firmaBase64 = signaturePad.toDataURL("image/png");
+    const firmaInput = document.getElementById('firmaBase64Input');
+    if (firmaInput) {
+      firmaInput.value = firmaBase64;
+    }
+  
+
+    if (modalFirma) modalFirma.classList.add('hidden');
+    if (modalFoto) modalFoto.classList.remove('hidden');
   }
 
   function closeFotoModal(){
@@ -51,6 +92,9 @@ let currentEnvioId = null;
   }
 
   function backToFirma(){
+    if (!REQUIERE_FIRMA_RECIBIDO) return;
+    if (!modalFoto || !modalFirma) return;
+
     modalFoto.classList.add('hidden');
     modalFirma.classList.remove('hidden');
   }
@@ -59,28 +103,52 @@ let currentEnvioId = null;
   const fotoInput = document.getElementById('fotoInput');
   const fotoPreview = document.getElementById('fotoPreview');
 
-  fotoInput.addEventListener('change', () => {
-    const file = fotoInput.files && fotoInput.files[0];
-    if (!file) return;
+  if (fotoInput) {
+    fotoInput.addEventListener('change', () => {
+      const file = fotoInput.files && fotoInput.files[0];
+      if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      const base64 = reader.result; // data:image/...
-      document.getElementById('fotoBase64Input').value = base64;
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64 = reader.result;
+        const fotoBase64Input = document.getElementById('fotoBase64Input');
+        if (fotoBase64Input) {
+          fotoBase64Input.value = base64;
+        }
 
-      fotoPreview.src = base64;
-      fotoPreview.classList.remove('hidden');
-    };
-    reader.readAsDataURL(file);
-  });
+        if (fotoPreview) {
+          fotoPreview.src = base64;
+          fotoPreview.classList.remove('hidden');
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  }
 
   // Validación antes de enviar
   document.getElementById('formEntregar').addEventListener('submit', (e) => {
-    const firma = document.getElementById('firmaBase64Input').value;
-    const foto  = document.getElementById('fotoBase64Input').value;
-    if (!currentEnvioId || !firma || !foto){
+  const firma = document.getElementById('firmaBase64Input')?.value || '';
+  const foto  = document.getElementById('fotoBase64Input')?.value || '';
+
+    if (!currentEnvioId) {
       e.preventDefault();
-      alert("Falta firma o foto.");
+      alert("No se encontró el envío.");
+      return;
+    }
+
+    if (REQUIERE_FIRMA_RECIBIDO) {
+      if (!firma || !foto) {
+        e.preventDefault();
+        alert("Falta firma o foto.");
+        return;
+      }
+    } else {
+      if (!foto) {
+        e.preventDefault();
+        alert("La foto es obligatoria.");
+        return;
+      
+      }
     }
   });
 

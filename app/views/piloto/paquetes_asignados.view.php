@@ -58,6 +58,7 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
+                    <?php $requiere_firma_recibido = false; ?>
                     <?php if (empty($envios)): ?>
                         <tr>
                             <td colspan="6" class="px-6 py-8 text-center text-sm text-slate-500 dark:text-slate-400">
@@ -133,8 +134,8 @@
                                         <?php if (($e['estado_envio'] ?? '') !== 'recibido' && ($e['estado_envio'] ?? '') !== 'cancelado'): ?>
                                             <button
                                                 type="button"
-                                                onclick="openFirmaModal(<?= (int)$e['id'] ?>)"
-                                                class="px-3 py-1.5 text-xs rounded font-bold bg-green-600 text-white justify-center">
+                                                onclick="openRecibidoFlow(<?= (int)$e['id'] ?>)"
+                                                class="px-3 py-1.5 text-xs font-bold bg-green-600 text-white rounded hover:bg-green-700 shadow-sm transition-colors">
                                                 Recibido
                                             </button>
 
@@ -157,7 +158,7 @@
             <?php if (empty($envios)): ?>
                 <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 text-center text-sm text-slate-500 dark:text-slate-400">
                     No hay envíos asignados.
-                </div>
+                </div>   
             <?php else: ?>
                 <?php foreach ($envios as $e): ?>
                     <?php
@@ -213,11 +214,10 @@
                             <button type="button" class="px-3 py-1.5 text-xs font-bold text-primary border border-primary rounded hover:bg-primary hover:text-white transition-colors btnVerGuia" data-envio-id="<?= (int)$e['id'] ?>">
                                  Ver
                             </button>
-
                             <?php if ($estado !== 'recibido' && $estado !== 'cancelado'): ?>
                                 <button
                                     type="button"
-                                    onclick="openFirmaModal(<?= (int)$e['id'] ?>)"
+                                    onclick="openRecibidoFlow(<?= (int)$e['id'] ?>)"
                                     class="px-3 py-1.5 text-xs font-bold bg-green-600 text-white rounded hover:bg-green-700 shadow-sm transition-colors">
                                     Recibido
                                 </button>
@@ -243,7 +243,12 @@
   window.APP_BASE_URL = <?= json_encode(BASE_URL) ?>;
 </script>
 
-    <?php include BASE_PATH . '/piloto/partials/piloto/modal_firma.php'; ?>
+    <?php if ($requiere_firma_recibido): ?>
+        <?php include BASE_PATH . '/piloto/partials/piloto/modal_firma.php'; ?>
+    <?php endif; ?>
+    <script>
+        const REQUIERE_FIRMA_RECIBIDO = <?= $requiere_firma_recibido ? 'true' : 'false' ?>;
+    </script>
     <?php include BASE_PATH . '/piloto/partials/piloto/modal_foto.php'; ?>
     <?php include BASE_PATH . '/piloto/partials/piloto/help_card.php'; ?>
     <?php include BASE_PATH . '/piloto/partials/piloto/modal_guia.php'; ?>

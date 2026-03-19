@@ -14,7 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 $user_id = (int)$_SESSION['user_id'];
 
-// 1) Obtener piloto_id real (pilotos.id)
+// Obtener piloto_id real
 $stmt = $pdo->prepare("SELECT id FROM pilotos WHERE user_id = ? LIMIT 1");
 $stmt->execute([$user_id]);
 $piloto_id = (int)$stmt->fetchColumn();
@@ -24,18 +24,25 @@ if (!$piloto_id) {
   exit;
 }
 
-// 2) Leer POST correcto
+// Leer POST
 $envio_id = isset($_POST['envio_id']) ? (int)$_POST['envio_id'] : 0;
 $nuevo_estado = $_POST['nuevo_estado'] ?? '';
 
-$permitidos = ['pendiente', 'recibido', 'cancelado'];
+// Aquí quitamos 'recibido' para que solo se procese desde entregar_envio.php
+$permitidos = ['pendiente', 'cancelado'];
+
 if ($envio_id <= 0 || !in_array($nuevo_estado, $permitidos, true)) {
-  echo "Datos incompletos.";
+  echo "Datos incompletos o estado no permitido.";
   exit;
 }
 
-// 3) Verificar que el envío pertenezca al piloto logueado
-$stmt = $pdo->prepare("SELECT id FROM envios WHERE id = ? AND piloto_id = ? LIMIT 1");
+// Verificar que el envío pertenezca al piloto logueado
+$stmt = $pdo->prepare("
+  SELECT id
+  FROM envios
+  WHERE id = ? AND piloto_id = ?
+  LIMIT 1
+");
 $stmt->execute([$envio_id, $piloto_id]);
 $envio = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -44,8 +51,13 @@ if (!$envio) {
   exit;
 }
 
-// 4) Actualizar estado en envios (NO en paquetes)
-$stmt = $pdo->prepare("UPDATE envios SET estado_envio = ? WHERE id = ? LIMIT 1");
+// Actualizar estado
+$stmt = $pdo->prepare("
+  UPDATE envios
+  SET estado_envio = ?
+  WHERE id = ?
+  LIMIT 1
+");
 $stmt->execute([$nuevo_estado, $envio_id]);
 
 header("Location: paquetes_asignados.php");
