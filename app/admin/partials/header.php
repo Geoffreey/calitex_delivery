@@ -163,7 +163,7 @@
           <button class="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg text-sm font-bold shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all whitespace-nowrap">
             <span class="material-symbols-outlined text-[18px]">add</span>
             <span href="crear_envio.php" class="hidden sm:inline">Crear nuevo envío</span>
-            <span class="sm:hidden">New</span>
+            <span href="crear_envio.php" class="sm:hidden">Nuevo envio</span>
           </button>
         </div>
       </header>
