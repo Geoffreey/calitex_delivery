@@ -134,7 +134,7 @@
                                             <button
                                                 type="button"
                                                 onclick="openFirmaModal(<?= (int)$e['id'] ?>)"
-                                                class="flex items-center justify-center py-3 text-sm font-bold bg-green-600 text-white rounded-lg shadow-sm w-full">
+                                                class="px-3 py-1.5 text-xs rounded font-bold bg-green-600 text-white justify-center">
                                                 Recibido
                                             </button>
 
