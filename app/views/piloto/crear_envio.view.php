@@ -9,7 +9,7 @@
       Genere una guía digital y programe una recolección.
     </p>
   </div>
-  <form method="POST" id="form-envio" class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+  <form method="POST" id="form-envio" class="grid grid-cols-1 lg:grid-cols-12 gap-8" enctype="multipart/form-data">
     <div class="lg:col-span-7 flex flex-col gap-6">
       <?php include BASE_PATH . '/piloto/partials/piloto/form_cliente_receptor.php'; ?>
       <?php include BASE_PATH . '/piloto/partials/piloto/form_logica_envio.php'; ?>

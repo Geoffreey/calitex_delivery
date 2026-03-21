@@ -13,7 +13,7 @@
                 class="w-full py-3 px-4 rounded-lg border-2 border-dashed border-accent/40 text-accent font-bold hover:bg-accent/5 transition-all flex items-center justify-center gap-2"
                 type="button">
                 <span class="material-symbols-outlined">add</span>
-                Add New Package
+                Agregar nuevo paquete
             </button>
 
             <div class="mt-8 pt-6 border-t border-gray-100 dark:border-gray-800 space-y-3">
@@ -68,6 +68,14 @@
                                     </option>
                                 <?php endforeach; ?>
                             </select>
+                        </div>
+                        <div class="col-span-12">
+                            <label class="text-[11px] font-bold text-gray-500 block mb-1">Foto del item</label>
+                            <input class="fotoInput w-full py-2 px-3 rounded-lg border border-[#cfd7e7] dark:border-gray-700 bg-white dark:bg-gray-800 text-sm focus:ring-primary" type="file" accept="image/*" />
+                        </div>
+
+                        <div class="col-span-12 previewWrapper hidden">
+                            <img class="previewImage w-24 h-24 object-cover rounded-lg border border-gray-200 dark:border-gray-700" src="" alt="Preview" />
                         </div>
 
                         <div class="col-span-4">

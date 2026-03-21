@@ -19,10 +19,25 @@ console.log("✅ envio-paquetes.js cargó");
 
   const payerRadios = document.querySelectorAll('input[name="pago_envio"]');
 
-function getPayer() {
-  const checked = document.querySelector('input[name="pago_envio"]:checked');
-  return checked ? checked.value : 'cliente';
-}
+  // Mappings para nombres dinámicos de inputs (paquete_id -> paquete_ids[ID])
+  function updateItemNames() {
+    const items = document.querySelectorAll('.itemCard');
+
+    items.forEach((item, index) => {
+        item.querySelector('.pkgSelect').name = 'paquete_id[]';
+        item.querySelector('.qtyInput').name = 'cantidad[]';
+        item.querySelector('.cobroInput').name = 'cobro[]';
+        item.querySelector('.pesoInput').name = 'peso[]';
+        item.querySelector('.fotoInput').name = 'foto_item[]';
+
+        item.querySelector('.itemTitle').textContent = `Item #${index + 1}`;
+    });
+  }
+
+  function getPayer() {
+    const checked = document.querySelector('input[name="pago_envio"]:checked');
+    return checked ? checked.value : 'cliente';
+  }
 
 
   payerRadios.forEach(r => r.addEventListener('change', recalcAll));
@@ -93,104 +108,104 @@ function getPayer() {
   }
 
   function recalcAll() {
-  const cards = [...container.querySelectorAll('.itemCard')];
-  const payer = getPayer(); // "cliente" o "destinatario" (según tu HTML)
+    const cards = [...container.querySelectorAll('.itemCard')];
+    const payer = getPayer(); // "cliente" o "destinatario" (según tu HTML)
 
-  // 1) Recolectar data por card y pintar subtotal por card (respetando payer)
-  const agg = {}; // pkgId -> {qty, cobro, tarifa, pesoTotal}
-  cards.forEach(card => {
-    const select = card.querySelector('.pkgSelect');
-    const pkgId = select.value;
+    // 1) Recolectar data por card y pintar subtotal por card (respetando payer)
+    const agg = {}; // pkgId -> {qty, cobro, tarifa, pesoTotal}
+    cards.forEach(card => {
+      const select = card.querySelector('.pkgSelect');
+      const pkgId = select.value;
 
-    const qty = Number(card.querySelector('.qtyInput').value || 0);
-    const cobro = Number(card.querySelector('.cobroInput').value || 0);
+      const qty = Number(card.querySelector('.qtyInput').value || 0);
+      const cobro = Number(card.querySelector('.cobroInput').value || 0);
 
-    const opt = select.options[select.selectedIndex];
-    const tarifa = opt ? Number(opt.dataset.tarifa || 0) : 0;
+      const opt = select.options[select.selectedIndex];
+      const tarifa = opt ? Number(opt.dataset.tarifa || 0) : 0;
 
-    // peso auto
-    const pesoInput = card.querySelector('.pesoInput');
-    const pesoOpt = opt ? Number(opt.dataset.peso || 0) : 0;
-    const pesoVal = Number(pesoInput.value || 0);
-    if (pesoVal === 0 && pesoOpt > 0) pesoInput.value = pesoOpt;
+      // peso auto
+      const pesoInput = card.querySelector('.pesoInput');
+      const pesoOpt = opt ? Number(opt.dataset.peso || 0) : 0;
+      const pesoVal = Number(pesoInput.value || 0);
+      if (pesoVal === 0 && pesoOpt > 0) pesoInput.value = pesoOpt;
 
-    const peso = Number(pesoInput.value || 0);
+      const peso = Number(pesoInput.value || 0);
 
-    // ✅ subtotal visual por item: cobro + (tarifa*qty solo si paga destinatario)
-    const shippingItem = (payer === 'destinatario') ? (qty * tarifa) : 0;
-    const subtotalItem = cobro + shippingItem;
+      // ✅ subtotal visual por item: cobro + (tarifa*qty solo si paga destinatario)
+      const shippingItem = (payer === 'destinatario') ? (qty * tarifa) : 0;
+      const subtotalItem = cobro + shippingItem;
 
-    card.querySelector('.itemSubtotal').textContent = money(subtotalItem);
+      card.querySelector('.itemSubtotal').textContent = money(subtotalItem);
 
-    // hidden values (siempre)
-    const hiddenPkg = card.querySelector('.hiddenPkgName');
-    const hiddenCobro = card.querySelector('.hiddenCobroName');
-    hiddenPkg.value = qty;
-    hiddenCobro.value = cobro;
+      // hidden values (siempre)
+      const hiddenPkg = card.querySelector('.hiddenPkgName');
+      const hiddenCobro = card.querySelector('.hiddenCobroName');
+      hiddenPkg.value = qty;
+      hiddenCobro.value = cobro;
 
-    // nombres de hidden (solo si hay pkg)
-    if (!pkgId) {
-      hiddenPkg.removeAttribute('name');
-      hiddenCobro.removeAttribute('name');
-      return;
-    } else {
-      hiddenPkg.name = `paquete_ids[${pkgId}]`;
-      hiddenCobro.name = `monto_cobros[${pkgId}]`;
-    }
+      // nombres de hidden (solo si hay pkg)
+      if (!pkgId) {
+        hiddenPkg.removeAttribute('name');
+        hiddenCobro.removeAttribute('name');
+        return;
+      } else {
+        hiddenPkg.name = `paquete_ids[${pkgId}]`;
+        hiddenCobro.name = `monto_cobros[${pkgId}]`;
+      }
 
-    // agregación por paquete (para backend)
-    if (!agg[pkgId]) agg[pkgId] = { qty: 0, cobro: 0, tarifa: tarifa, pesoTotal: 0 };
-    agg[pkgId].qty += qty;
-    agg[pkgId].cobro += cobro;
-    agg[pkgId].tarifa = tarifa; // por si cambia
-    agg[pkgId].pesoTotal += (peso * qty);
-  });
+      // agregación por paquete (para backend)
+      if (!agg[pkgId]) agg[pkgId] = { qty: 0, cobro: 0, tarifa: tarifa, pesoTotal: 0 };
+      agg[pkgId].qty += qty;
+      agg[pkgId].cobro += cobro;
+      agg[pkgId].tarifa = tarifa; // por si cambia
+      agg[pkgId].pesoTotal += (peso * qty);
+    });
 
-  // 2) Dejar solo 1 hidden por paquete activo (evita duplicados al POST)
-  const firstById = {};
-  cards.forEach(card => {
-    const pkgId = card.querySelector('.pkgSelect').value;
-    if (!pkgId) return;
+    // 2) Dejar solo 1 hidden por paquete activo (evita duplicados al POST)
+    const firstById = {};
+    cards.forEach(card => {
+      const pkgId = card.querySelector('.pkgSelect').value;
+      if (!pkgId) return;
 
-    const hiddenPkg = card.querySelector('.hiddenPkgName');
-    const hiddenCobro = card.querySelector('.hiddenCobroName');
+      const hiddenPkg = card.querySelector('.hiddenPkgName');
+      const hiddenCobro = card.querySelector('.hiddenCobroName');
 
-    if (!firstById[pkgId]) {
-      firstById[pkgId] = true;
+      if (!firstById[pkgId]) {
+        firstById[pkgId] = true;
 
-      // ✅ set agregados SOLO en el primer card de ese paquete
-      hiddenPkg.value = agg[pkgId].qty;
-      hiddenCobro.value = agg[pkgId].cobro;
+        // ✅ set agregados SOLO en el primer card de ese paquete
+        hiddenPkg.value = agg[pkgId].qty;
+        hiddenCobro.value = agg[pkgId].cobro;
 
-      hiddenPkg.name = `paquete_ids[${pkgId}]`;
-      hiddenCobro.name = `monto_cobros[${pkgId}]`;
-    } else {
-      // desactivar duplicados
-      hiddenPkg.removeAttribute('name');
-      hiddenCobro.removeAttribute('name');
-    }
-  });
+        hiddenPkg.name = `paquete_ids[${pkgId}]`;
+        hiddenCobro.name = `monto_cobros[${pkgId}]`;
+      } else {
+        // desactivar duplicados
+        hiddenPkg.removeAttribute('name');
+        hiddenCobro.removeAttribute('name');
+      }
+    });
 
-  // 3) Totales
-  let totalFee = 0;
-  let totalAmount = 0;
-  let totalWeight = 0;
+    // 3) Totales
+    let totalFee = 0;
+    let totalAmount = 0;
+    let totalWeight = 0;
 
-  Object.values(agg).forEach(x => {
-    const shipping = (payer === 'destinatario') ? (x.qty * x.tarifa) : 0;
-    const extras = x.cobro;
+    Object.values(agg).forEach(x => {
+      const shipping = (payer === 'destinatario') ? (x.qty * x.tarifa) : 0;
+      const extras = x.cobro;
 
-    totalFee += shipping;
-    totalAmount += (shipping + extras);
-    totalWeight += x.pesoTotal;
-  });
+      totalFee += shipping;
+      totalAmount += (shipping + extras);
+      totalWeight += x.pesoTotal;
+    });
 
-  totalAmountEl.textContent = money(totalAmount);
-  totalFeeEl.textContent = money(totalFee);
-  totalWeightEl.textContent = money(totalWeight);
+    totalAmountEl.textContent = money(totalAmount);
+    totalFeeEl.textContent = money(totalFee);
+    totalWeightEl.textContent = money(totalWeight);
 
-  renumberItems();
-}
+    renumberItems();
+  }
 
 
   function addItem(prefill = {}) {
